@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 
 import { buildComprehension } from "../comprehend/index.js";
 import { normalizeRepoInput } from "../input/index.js";
-import { renderAgentContext, renderContextIndex, renderOnboarding, renderRepoMap } from "../render/index.js";
+import { renderAgentContext, renderContextIndex, renderHtmlReport, renderOnboarding, renderRepoMap } from "../render/index.js";
 import { scanRepository } from "../scan/index.js";
 import { extractSignals } from "../extract/index.js";
 import { writeRunArtifact, writeRunJsonArtifact } from "../shared/index.js";
@@ -162,6 +162,12 @@ export async function runPipeline(argv: readonly string[]): Promise<{
       input.run_id,
       "outputs/ONBOARDING.md",
       renderOnboarding(contextIndex),
+    ),
+    await writeRunArtifact(
+      input.output_root,
+      input.run_id,
+      "outputs/index.html",
+      renderHtmlReport(contextIndex),
     ),
   ];
 
