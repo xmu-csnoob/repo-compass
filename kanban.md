@@ -335,16 +335,16 @@ Milestone: `Post-M4 or stretch within M4`
 Depends on: `3.6`  
 Review gate: `Codex`
 
-- [ ] `8.1` Define minimal HTML report scope
-  - [ ] Confirm report is derived-only from canonical metadata
-  - [ ] Limit scope to read-only exploration
-- [ ] `8.2` Build minimal HTML renderer
-  - [ ] Repo summary
-  - [ ] First-read path
-  - [ ] Key paths and entrypoints
-  - [ ] Confidence indicators
-- [ ] `8.3` Keep release gating separate
-  - [ ] HTML is not a blocker for initial Phase 1 release
+- [x] `8.1` Define minimal HTML report scope
+  - [x] Confirm report is derived-only from canonical metadata
+  - [x] Limit scope to read-only exploration
+- [x] `8.2` Build minimal HTML renderer
+  - [x] Repo summary
+  - [x] First-read path
+  - [x] Key paths and entrypoints
+  - [x] Confidence indicators
+- [x] `8.3` Keep release gating separate
+  - [x] HTML is not a blocker for initial Phase 1 release
 
 ## Ready First
 
