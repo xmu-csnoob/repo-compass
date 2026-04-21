@@ -141,4 +141,96 @@ describe("HTML report renderer (8.2)", () => {
 
     expect(html).toContain("nextjs");
   });
+
+  it("renders critical paths section when present", async () => {
+    const input = normalizeRepoInput({
+      schema_version: "1.0",
+      run_id: "test-html-critical",
+      repo_root: fixturePath("nextjs-app"),
+      output_root: fixturePath("nextjs-app"),
+    });
+    const scan = await scanRepository(input);
+    const signals = await extractSignals(scan);
+    const comprehension = buildComprehension(input, scan, signals);
+
+    expect(comprehension.critical_paths.length).toBeGreaterThan(0);
+
+    const contextIndex = {
+      schema_version: comprehension.schema_version,
+      repo: comprehension.repo,
+      meta: comprehension.meta,
+      artifacts: comprehension.artifacts,
+      graph: comprehension.graph,
+      entrypoints: comprehension.entrypoints,
+      first_read_path: comprehension.first_read_path,
+      key_paths: comprehension.key_paths,
+      critical_paths: comprehension.critical_paths,
+      defer_for_now: comprehension.defer_for_now,
+      agent_hints: comprehension.agent_hints,
+    };
+
+    const html = renderHtmlReport(contextIndex);
+
+    expect(html).toContain("Critical Paths");
+  });
+
+  it("renders empty defer_for_now state message", async () => {
+    const input = normalizeRepoInput({
+      schema_version: "1.0",
+      run_id: "test-html-defer",
+      repo_root: fixturePath("node-cli"),
+      output_root: fixturePath("node-cli"),
+    });
+    const scan = await scanRepository(input);
+    const signals = await extractSignals(scan);
+    const comprehension = buildComprehension(input, scan, signals);
+
+    const contextIndex = {
+      schema_version: comprehension.schema_version,
+      repo: comprehension.repo,
+      meta: comprehension.meta,
+      artifacts: comprehension.artifacts,
+      graph: comprehension.graph,
+      entrypoints: comprehension.entrypoints,
+      first_read_path: comprehension.first_read_path,
+      key_paths: comprehension.key_paths,
+      critical_paths: comprehension.critical_paths,
+      defer_for_now: [],
+      agent_hints: comprehension.agent_hints,
+    };
+
+    const html = renderHtmlReport(contextIndex);
+
+    expect(html).toContain("No paths marked for deferral");
+  });
+
+  it("renders empty commands state message", async () => {
+    const input = normalizeRepoInput({
+      schema_version: "1.0",
+      run_id: "test-html-no-commands",
+      repo_root: fixturePath("node-cli"),
+      output_root: fixturePath("node-cli"),
+    });
+    const scan = await scanRepository(input);
+    const signals = await extractSignals(scan);
+    const comprehension = buildComprehension(input, scan, signals);
+
+    const contextIndex = {
+      schema_version: comprehension.schema_version,
+      repo: comprehension.repo,
+      meta: comprehension.meta,
+      artifacts: { manifests: comprehension.artifacts.manifests, commands: [] },
+      graph: comprehension.graph,
+      entrypoints: comprehension.entrypoints,
+      first_read_path: comprehension.first_read_path,
+      key_paths: comprehension.key_paths,
+      critical_paths: comprehension.critical_paths,
+      defer_for_now: comprehension.defer_for_now,
+      agent_hints: comprehension.agent_hints,
+    };
+
+    const html = renderHtmlReport(contextIndex);
+
+    expect(html).toContain("No commands detected");
+  });
 });

@@ -142,14 +142,16 @@ function confidenceClass(confidence: "high" | "medium" | "low"): string {
 
 function confidenceLabel(confidence: "high" | "medium" | "low"): string {
   if (confidence === "high") return "";
-  return `<span class="confidence-badge ${confidenceClass(confidence)}">${confidence}</span>`;
+  return `<span class="confidence-badge ${confidenceClass(confidence)}">${escapeHtml(confidence)}</span>`;
 }
 
-function renderListItem(text: string, confidence?: "high" | "medium" | "low"): string {
+// Renders a list item. Caller must escape HTML in escapedHtml before passing.
+// confidenceLabel is called separately and handles its own escaping.
+function renderListItem(escapedHtml: string, confidence?: "high" | "medium" | "low"): string {
   if (confidence && confidence !== "high") {
-    return `<li>${text} ${confidenceLabel(confidence)}</li>`;
+    return `<li>${escapedHtml} ${confidenceLabel(confidence)}</li>`;
   }
-  return `<li>${text}</li>`;
+  return `<li>${escapedHtml}</li>`;
 }
 
 export function renderHtmlReport(contextIndex: ContextIndex): string {
@@ -219,11 +221,11 @@ export function renderHtmlReport(contextIndex: ContextIndex): string {
         </div>
         <div class="meta-item">
           <label>Languages</label>
-          <span>${contextIndex.repo.primary_languages.join(", ") || "unknown"}</span>
+          <span>${escapeHtml(contextIndex.repo.primary_languages.join(", ")) || "unknown"}</span>
         </div>
         <div class="meta-item">
           <label>Frameworks</label>
-          <span>${contextIndex.repo.framework_hints.join(", ") || "none"}</span>
+          <span>${escapeHtml(contextIndex.repo.framework_hints.join(", ")) || "none"}</span>
         </div>
       </div>
     </div>
