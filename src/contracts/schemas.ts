@@ -26,13 +26,16 @@ export const repoInputSchema = z.object({
   include: z.array(z.string()).default([]),
   exclude: z.array(z.string()).default([]),
   max_files: z.number().int().positive().default(50_000),
-  options: z.object({
-    follow_symlinks: z.boolean().default(false),
-    detect_frameworks: z.boolean().default(true),
-    extract_import_graph: z.boolean().default(true),
-    emit_debug_artifacts: z.boolean().default(false),
-    emit_agent_views: z.boolean().default(true),
-  }),
+  options: z
+    .object({
+      follow_symlinks: z.boolean().default(false),
+      detect_frameworks: z.boolean().default(true),
+      extract_import_graph: z.boolean().default(true),
+      emit_debug_artifacts: z.boolean().default(false),
+      emit_agent_views: z.boolean().default(true),
+    })
+    .optional()
+    .default({}),
 });
 
 export const manifestSchema = z.object({
@@ -199,7 +202,9 @@ export const comprehensionSchema = z.object({
   agent_hints: z.array(agentHintSchema),
 });
 
-export const contextIndexSchema = comprehensionSchema.omit({ run_id: true });
+export const contextIndexSchema = comprehensionSchema
+  .omit({ run_id: true })
+  .strict();
 
 export const contracts = {
   repoInputSchema,

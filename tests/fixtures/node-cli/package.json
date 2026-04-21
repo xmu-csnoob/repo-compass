@@ -1,0 +1,25 @@
+{
+  "name": "node-cli-fixture",
+  "version": "1.0.0",
+  "description": "A sample CLI tool",
+  "type": "module",
+  "bin": {
+    "mycli": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "test": "vitest run",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "picocolors": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}
