@@ -341,15 +341,28 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
     const parentDir = path.posix.dirname(pathEntry.path);
 
     if (basename.startsWith("tsconfig") || basename === "jsconfig.json") {
-      // tsconfig links to source files under its directory (source depends on its tsconfig)
-      const sourcesInScope = sourceFilesByDir.get(parentDir) ?? [];
-      for (const sourcePath of sourcesInScope) {
-        if (sourcePath.startsWith(`${parentDir}/`)) {
-          edges.push({
-            from: sourcePath,
-            to: pathEntry.path,
-            kind: "config-link",
-          });
+      if (parentDir === ".") {
+        // Root-level tsconfig applies to all source files
+        for (const sourcePath of knownFilePaths) {
+          if (sourcePath.startsWith("src/") || sourcePath.match(/\/[cm]?jsx?$/u)) {
+            edges.push({
+              from: sourcePath,
+              to: pathEntry.path,
+              kind: "config-link",
+            });
+          }
+        }
+      } else {
+        // Subdirectory tsconfig only links to source files under that directory
+        const sourcesInScope = sourceFilesByDir.get(parentDir) ?? [];
+        for (const sourcePath of sourcesInScope) {
+          if (sourcePath.startsWith(`${parentDir}/`)) {
+            edges.push({
+              from: sourcePath,
+              to: pathEntry.path,
+              kind: "config-link",
+            });
+          }
         }
       }
     }

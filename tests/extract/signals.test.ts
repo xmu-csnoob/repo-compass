@@ -73,4 +73,122 @@ describe("extractSignals", () => {
       ),
     ).toBe(true);
   });
+
+  it("creates test-of edges for test files targeting source files", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "repo-compass-testof-"));
+    temporaryDirectories.push(repoRoot);
+
+    await mkdir(path.join(repoRoot, "src"), { recursive: true });
+    await writeFile(path.join(repoRoot, "src", "math.js"), "export const add = (a, b) => a + b;\n", "utf8");
+    await writeFile(path.join(repoRoot, "src", "math.test.js"), "import { add } from './math.js';\n", "utf8");
+
+    const input = normalizeRepoInput({
+      schema_version: "1.0",
+      run_id: "run-extract-testof",
+      repo_root: repoRoot,
+      output_root: repoRoot,
+    });
+    const scan = await scanRepository(input);
+    const signals = await extractSignals(scan);
+
+    expect(
+      signals.edges.some(
+        (edge) =>
+          edge.from === "src/math.test.js" &&
+          edge.to === "src/math.js" &&
+          edge.kind === "test-of",
+      ),
+    ).toBe(true);
+  });
+
+  it("creates config-link edges from source files to their tsconfig", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "repo-compass-configlink-"));
+    temporaryDirectories.push(repoRoot);
+
+    await mkdir(path.join(repoRoot, "src"), { recursive: true });
+    await writeFile(path.join(repoRoot, "tsconfig.json"), JSON.stringify({ compilerOptions: {} }), "utf8");
+    await writeFile(path.join(repoRoot, "src", "app.ts"), "export const app = true;\n", "utf8");
+
+    const input = normalizeRepoInput({
+      schema_version: "1.0",
+      run_id: "run-extract-configlink",
+      repo_root: repoRoot,
+      output_root: repoRoot,
+    });
+    const scan = await scanRepository(input);
+    const signals = await extractSignals(scan);
+
+    expect(
+      signals.edges.some(
+        (edge) =>
+          edge.from === "src/app.ts" &&
+          edge.to === "tsconfig.json" &&
+          edge.kind === "config-link",
+      ),
+    ).toBe(true);
+  });
+
+  it("creates reference edges for TypeScript triple-slash directives", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "repo-compass-ref-"));
+    temporaryDirectories.push(repoRoot);
+
+    await mkdir(path.join(repoRoot, "src"), { recursive: true });
+    await writeFile(
+      path.join(repoRoot, "src", "types.d.ts"),
+      "declare module 'foo';\n",
+      "utf8",
+    );
+    await writeFile(
+      path.join(repoRoot, "src", "app.ts"),
+      [
+        '/// <reference path="./types.d.ts" />',
+        "export const app = true;",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const input = normalizeRepoInput({
+      schema_version: "1.0",
+      run_id: "run-extract-ref",
+      repo_root: repoRoot,
+      output_root: repoRoot,
+    });
+    const scan = await scanRepository(input);
+    const signals = await extractSignals(scan);
+
+    expect(
+      signals.edges.some(
+        (edge) =>
+          edge.from === "src/app.ts" &&
+          edge.to === "src/types.d.ts" &&
+          edge.kind === "reference",
+      ),
+    ).toBe(true);
+  });
+
+  it("creates route edges for Next.js App Router route handler files", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "repo-compass-route-"));
+    temporaryDirectories.push(repoRoot);
+
+    await mkdir(path.join(repoRoot, "app/api/hello"), { recursive: true });
+    await writeFile(path.join(repoRoot, "app/api/hello/route.ts"), "export function GET() {}", "utf8");
+
+    const input = normalizeRepoInput({
+      schema_version: "1.0",
+      run_id: "run-extract-route",
+      repo_root: repoRoot,
+      output_root: repoRoot,
+    });
+    const scan = await scanRepository(input);
+    const signals = await extractSignals(scan);
+
+    expect(
+      signals.edges.some(
+        (edge) =>
+          edge.from === "app/api/hello/route.ts" &&
+          edge.to === "app/api/hello" &&
+          edge.kind === "route",
+      ),
+    ).toBe(true);
+  });
 });
