@@ -305,6 +305,7 @@ Recommended run layout:
 - `work/runs/<run-id>/context-index.json`
 - `work/runs/<run-id>/outputs/ONBOARDING.md`
 - `work/runs/<run-id>/outputs/repo.map.md`
+- `work/runs/<run-id>/outputs/agent-context.md` when agent views are enabled
 
 Optional debug-only internals:
 

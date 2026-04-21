@@ -6,6 +6,8 @@ import { normalizeRepoRelativePath } from "./paths.js";
 const DEFAULT_IGNORE_RULES = [
   ".git/",
   "node_modules/",
+  ".next/",
+  ".output/",
   "dist/",
   "coverage/",
   "work/runs/",
