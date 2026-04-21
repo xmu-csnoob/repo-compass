@@ -10,6 +10,7 @@ const DEFAULT_IGNORE_RULES = [
   ".output/",
   "dist/",
   "coverage/",
+  "work/",
   "work/runs/",
 ] as const;
 

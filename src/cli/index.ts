@@ -197,7 +197,7 @@ export async function runPipeline(argv: readonly string[]): Promise<{
 
   return {
     runId: input.run_id,
-    outputPaths,
+    outputPaths: outputPaths as readonly string[],
   };
 }
 

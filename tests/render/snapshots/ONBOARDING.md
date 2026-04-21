@@ -11,8 +11,7 @@
 - `README.md` [medium]: This path appears central to repo comprehension.
 
 ## Likely Entrypoints
-- `src/index.ts` (cli): Likely execution entrypoint.
-- `src/index.ts` (app): Likely execution entrypoint.
+- `src/index.ts` (cli): CLI entrypoint — invoked directly from the command line.
 
 ## Getting Oriented
 - Use npm run dev to start the primary workflow.

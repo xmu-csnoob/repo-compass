@@ -48,7 +48,7 @@ function classifyPathRole(entry: WalkEntry): StructurePath["role"] {
   if (
     entry.repoRelativePath.startsWith("docs/") ||
     baseName === "README.md" ||
-    baseName.endsWith(".md")
+    (baseName.endsWith(".md") && !entry.repoRelativePath.startsWith("src/") && !entry.repoRelativePath.startsWith("app/"))
   ) {
     return "docs";
   }
@@ -57,6 +57,8 @@ function classifyPathRole(entry: WalkEntry): StructurePath["role"] {
     entry.repoRelativePath.includes("/__tests__/") ||
     entry.repoRelativePath.includes("/test/") ||
     entry.repoRelativePath.includes("/tests/") ||
+    entry.repoRelativePath.startsWith("tests/") ||
+    entry.repoRelativePath.startsWith("test/") ||
     /\.test\.[cm]?[jt]sx?$/u.test(entry.repoRelativePath) ||
     /\.spec\.[cm]?[jt]sx?$/u.test(entry.repoRelativePath) ||
     baseName === "setupTests.ts"
@@ -128,7 +130,7 @@ function detectLanguages(entries: readonly WalkEntry[]): string[] {
     }
   }
 
-  return [...found];
+  return [...found].sort();
 }
 
 function detectFrameworkHints(entries: readonly WalkEntry[], packageJsonContent?: string): string[] {
@@ -156,8 +158,26 @@ function detectFrameworkHints(entries: readonly WalkEntry[], packageJsonContent?
     hints.add("express");
   }
 
-  if (/"bin"\s*:/u.test(packageText) || allPaths.has("src/index.ts")) {
+  if (/"bin"\s*:/u.test(packageText)) {
     hints.add("node-cli");
+  }
+
+  // CLI detection: scripts.dev/start invoke tsx/node/ts-node/bun directly on a source file
+  if (!hints.has("node-cli")) {
+    const devScript = /"dev"\s*:\s*"([^"]*)"/u.exec(packageText)?.[1] ?? "";
+    const startScript = /"start"\s*:\s*"([^"]*)"/u.exec(packageText)?.[1] ?? "";
+    const scriptText = `${devScript} ${startScript}`;
+    if (/\b(?:tsx|ts-node|node|bun)\s+(\.\/)?src\//u.test(scriptText)) {
+      hints.add("node-cli");
+    }
+  }
+
+  // Library: has main or exports but no bin (and not already detected as app/service)
+  if (
+    !/"bin"\s*:/u.test(packageText) &&
+    (/"main"\s*:/u.test(packageText) || /"exports"\s*:/u.test(packageText))
+  ) {
+    hints.add("library");
   }
 
   return [...hints];
@@ -245,6 +265,8 @@ export async function scanRepository(input: RepoInput): Promise<StructureScan> {
     },
     detected: {
       languages: detectLanguages(filteredEntries),
+      // Phase 1: Only Node ecosystem detection is implemented.
+      // Python/pip, Rust/cargo, Go modules, etc. are known Phase 1 limitations.
       ecosystems: manifests.some((manifest) => manifest.kind === "package-json") ? ["node"] : [],
       framework_hints: input.options.detect_frameworks
         ? detectFrameworkHints(filteredEntries, packageJsonContent)

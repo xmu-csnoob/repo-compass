@@ -20,10 +20,8 @@
 
 ## Entrypoints
 - `src/index.ts` (cli): Script "dev" points to this path.
-- `src/index.ts` (app): Matched a common JS/TS repo entrypoint convention.
 
 ## Critical Paths
-- cli:src/index.ts [medium]: src/index.ts -> tsconfig.json
-- app:src/index.ts [medium]: src/index.ts -> tsconfig.json
+- cli:src/index.ts: src/index.ts
 
 ## Defer For Now

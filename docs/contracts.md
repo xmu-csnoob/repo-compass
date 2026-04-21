@@ -153,6 +153,13 @@ Purpose:
 {
   "schema_version": "1.0",
   "run_id": "string",
+  "meta": {
+    "run_id": "string",
+    "snapshot_id": "string",
+    "generated_at": "ISO-8601",
+    "included_paths": ["string"],
+    "excluded_paths": ["string"]
+  },
   "repo": {
     "name": "string",
     "root": "string",
@@ -209,7 +216,8 @@ Purpose:
       "path": "string",
       "why_now": "string",
       "reason": "string",
-      "confidence": "high|medium|low"
+      "confidence": "high|medium|low",
+      "evidence": ["string"]
     }
   ],
   "key_paths": [
@@ -229,14 +237,16 @@ Purpose:
       "name": "string",
       "steps": ["string"],
       "reason": "string",
-      "confidence": "high|medium|low"
+      "confidence": "high|medium|low",
+      "evidence": ["string"]
     }
   ],
   "defer_for_now": [
     {
       "path": "string",
       "reason": "string",
-      "confidence": "high|medium|low"
+      "confidence": "high|medium|low",
+      "evidence": ["string"]
     }
   ],
   "agent_hints": [
@@ -244,7 +254,8 @@ Purpose:
       "kind": "setup|run|test|safe-edit-zone|watch-out",
       "text": "string",
       "reason": "string",
-      "confidence": "high|medium|low"
+      "confidence": "high|medium|low",
+      "evidence": ["string"]
     }
   ]
 }
@@ -252,6 +263,7 @@ Purpose:
 
 Required sections:
 
+- `meta`
 - `repo`
 - `artifacts`
 - `graph`

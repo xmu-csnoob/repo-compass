@@ -36,7 +36,7 @@ export const repoInputSchema = z.object({
     })
     .optional()
     .default({}),
-});
+}).strict();
 
 export const manifestSchema = z.object({
   path: repoRelativePath,
@@ -66,7 +66,7 @@ export const structureScanSchema = z.object({
   }),
   paths: z.array(structurePathSchema),
   excluded_paths: z.array(repoRelativePath),
-});
+}).strict();
 
 export const commandSchema = z.object({
   source_path: repoRelativePath,
@@ -102,6 +102,7 @@ export const deferCandidateSchema = z.object({
   path: repoRelativePath,
   reason: z.string().min(1),
   confidence: confidenceLevelSchema,
+  evidence: evidenceSchema.optional(),
 });
 
 export const signalExtractionSchema = z.object({
@@ -113,7 +114,7 @@ export const signalExtractionSchema = z.object({
   priority_candidates: z.array(priorityCandidateSchema),
   defer_candidates: z.array(deferCandidateSchema),
   warnings: z.array(z.string().min(1)),
-});
+}).strict();
 
 export const repoMetadataSchema = z.object({
   name: z.string().min(1),
@@ -200,7 +201,7 @@ export const comprehensionSchema = z.object({
   critical_paths: z.array(criticalPathSchema),
   defer_for_now: z.array(deferForNowItemSchema),
   agent_hints: z.array(agentHintSchema),
-});
+}).strict();
 
 export const contextIndexSchema = comprehensionSchema
   .omit({ run_id: true })

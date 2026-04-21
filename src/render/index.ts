@@ -142,7 +142,7 @@ function confidenceClass(confidence: "high" | "medium" | "low"): string {
 
 function confidenceLabel(confidence: "high" | "medium" | "low"): string {
   if (confidence === "high") return "";
-  return `<span class="confidence-badge ${confidenceClass(confidence)}">${escapeHtml(confidence)}</span>`;
+  return `<span class="${confidenceClass(confidence)}">${escapeHtml(confidence)}</span>`;
 }
 
 // Renders a list item. Caller must escape HTML in escapedHtml before passing.

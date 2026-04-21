@@ -320,17 +320,10 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
     }
   }
 
-  // Pre-index source files by parent directory for efficient config-link resolution
-  const sourceFilesByDir = new Map<string, string[]>();
-  for (const sourcePath of knownFilePaths) {
-    const dir = path.posix.dirname(sourcePath);
-    const existing = sourceFilesByDir.get(dir);
-    if (existing !== undefined) {
-      existing.push(sourcePath);
-    } else {
-      sourceFilesByDir.set(dir, [sourcePath]);
-    }
-  }
+  // Build a focused index of relevant files for config-link generation
+  const sourceLikeFiles = [...knownFilePaths].filter(
+    (p) => fileRoleByPath.get(p) === "source" || fileRoleByPath.get(p) === "config" || fileRoleByPath.get(p) === "tests",
+  );
 
   for (const pathEntry of scan.paths) {
     if (pathEntry.role !== "config" || pathEntry.kind !== "file") {
@@ -342,9 +335,9 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
 
     if (basename.startsWith("tsconfig") || basename === "jsconfig.json") {
       if (parentDir === ".") {
-        // Root-level tsconfig applies to all source files
-        for (const sourcePath of knownFilePaths) {
-          if (sourcePath.startsWith("src/") || sourcePath.match(/\/[cm]?jsx?$/u)) {
+        // Root-level tsconfig applies to all source/config/test files (excluding itself)
+        for (const sourcePath of sourceLikeFiles) {
+          if (sourcePath !== pathEntry.path) {
             edges.push({
               from: sourcePath,
               to: pathEntry.path,
@@ -353,10 +346,9 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
           }
         }
       } else {
-        // Subdirectory tsconfig only links to source files under that directory
-        const sourcesInScope = sourceFilesByDir.get(parentDir) ?? [];
-        for (const sourcePath of sourcesInScope) {
-          if (sourcePath.startsWith(`${parentDir}/`)) {
+        // Subdirectory tsconfig links to all source files under that directory (any depth)
+        for (const sourcePath of sourceLikeFiles) {
+          if (sourcePath !== pathEntry.path && sourcePath.startsWith(`${parentDir}/`)) {
             edges.push({
               from: sourcePath,
               to: pathEntry.path,
@@ -459,6 +451,7 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
         path: pathEntry.path,
         reason: `Path role "${pathEntry.role}" is usually not helpful during the first read.`,
         confidence: "high",
+        evidence: [pathEntry.path],
       });
     }
   }
