@@ -70,4 +70,15 @@ describe("ignore", () => {
     expect(matcher.isIgnored("coverage/reports/out.txt", false)).toBe(true);
     expect(matcher.isIgnored("coverage/keep.txt", false)).toBe(false);
   });
+
+  it("matches directory ignores that come from defaults and nested paths", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "repo-compass-ignore-"));
+    temporaryDirectories.push(repoRoot);
+
+    const matcher = await loadIgnoreRules(repoRoot);
+
+    expect(matcher.isIgnored(".next", true)).toBe(true);
+    expect(matcher.isIgnored(".output", true)).toBe(true);
+    expect(matcher.isIgnored("vendor", true)).toBe(false);
+  });
 });

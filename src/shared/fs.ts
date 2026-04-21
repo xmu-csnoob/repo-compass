@@ -31,6 +31,10 @@ export type WalkEntry = {
 export type WalkDirectoryOptions = {
   readonly ignoreMatcher?: IgnoreMatcher;
   readonly followSymlinks?: boolean;
+  readonly onIgnoredEntry?: (entry: {
+    readonly repoRelativePath: string;
+    readonly kind: "file" | "directory";
+  }) => void;
 };
 
 async function canonicalizeRepoRoot(repoRoot: string): Promise<string> {
@@ -126,6 +130,10 @@ export async function walkDirectoryStable(
       const isDirectory = directoryEntry.isDirectory();
 
       if (options.ignoreMatcher?.isIgnored(repoRelativePath, isDirectory)) {
+        options.onIgnoredEntry?.({
+          repoRelativePath,
+          kind: isDirectory ? "directory" : "file",
+        });
         continue;
       }
 

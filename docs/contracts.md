@@ -359,6 +359,13 @@ Phase 1 pipeline artifacts:
 - output of: onboarding renderer
 - consumer: new contributor or first-session agent
 
+### `work/runs/<run-id>/outputs/agent-context.md`
+
+- input: `context-index.json`
+- output of: static agent renderer
+- consumer: coding agent bootstrap
+- emitted only when agent views are enabled
+
 Optional debug artifacts when enabled:
 
 - `work/runs/<run-id>/scan.json`
