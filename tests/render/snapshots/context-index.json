@@ -20,14 +20,7 @@
     "run_id": "<RUN_ID>",
     "snapshot_id": "<RUN_ID>",
     "generated_at": "<GENERATED_AT>",
-    "included_paths": [
-      "package.json",
-      "README.md",
-      "src",
-      "src/commands.ts",
-      "src/index.ts",
-      "tsconfig.json"
-    ],
+    "included_paths": [],
     "excluded_paths": []
   },
   "artifacts": {
@@ -127,22 +120,11 @@
       "id": "cli:src/index.ts",
       "path": "src/index.ts",
       "kind": "cli",
-      "summary": "Likely execution entrypoint.",
+      "summary": "CLI entrypoint — invoked directly from the command line.",
       "reason": "Script \"dev\" points to this path.",
       "confidence": "high",
       "evidence": [
         "scripts.dev"
-      ]
-    },
-    {
-      "id": "app:src/index.ts",
-      "path": "src/index.ts",
-      "kind": "app",
-      "summary": "Likely execution entrypoint.",
-      "reason": "Matched a common JS/TS repo entrypoint convention.",
-      "confidence": "high",
-      "evidence": [
-        "src/index.ts"
       ]
     }
   ],
@@ -238,25 +220,12 @@
     {
       "name": "cli:src/index.ts",
       "steps": [
-        "src/index.ts",
-        "tsconfig.json"
+        "src/index.ts"
       ],
-      "reason": "Shows the first structural hop from src/index.ts.",
-      "confidence": "medium",
+      "reason": "Shows the structural execution path from src/index.ts.",
+      "confidence": "high",
       "evidence": [
         "scripts.dev"
-      ]
-    },
-    {
-      "name": "app:src/index.ts",
-      "steps": [
-        "src/index.ts",
-        "tsconfig.json"
-      ],
-      "reason": "Shows the first structural hop from src/index.ts.",
-      "confidence": "medium",
-      "evidence": [
-        "src/index.ts"
       ]
     }
   ],

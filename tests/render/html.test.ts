@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { buildComprehension } from "../../src/comprehend/index.js";
 import { extractSignals } from "../../src/extract/index.js";
 import { normalizeRepoInput } from "../../src/input/index.js";
-import { renderHtmlReport } from "../../src/render/index.js";
+import { renderContextIndex, renderHtmlReport } from "../../src/render/index.js";
 import { scanRepository } from "../../src/scan/index.js";
 
 function fixturePath(name: string): string {
@@ -23,19 +23,7 @@ describe("HTML report renderer (8.2)", () => {
     const scan = await scanRepository(input);
     const signals = await extractSignals(scan);
     const comprehension = buildComprehension(input, scan, signals);
-    const contextIndex = {
-      schema_version: comprehension.schema_version,
-      repo: comprehension.repo,
-      meta: comprehension.meta,
-      artifacts: comprehension.artifacts,
-      graph: comprehension.graph,
-      entrypoints: comprehension.entrypoints,
-      first_read_path: comprehension.first_read_path,
-      key_paths: comprehension.key_paths,
-      critical_paths: comprehension.critical_paths,
-      defer_for_now: comprehension.defer_for_now,
-      agent_hints: comprehension.agent_hints,
-    };
+    const contextIndex = renderContextIndex(comprehension);
 
     const html = renderHtmlReport(contextIndex);
 
@@ -60,22 +48,13 @@ describe("HTML report renderer (8.2)", () => {
     const scan = await scanRepository(input);
     const signals = await extractSignals(scan);
     const comprehension = buildComprehension(input, scan, signals);
-    const contextIndex = {
-      schema_version: comprehension.schema_version,
+    const contextIndex = renderContextIndex({
+      ...comprehension,
       repo: {
         ...comprehension.repo,
         name: "Test <script>alert('xss')</script>",
       },
-      meta: comprehension.meta,
-      artifacts: comprehension.artifacts,
-      graph: comprehension.graph,
-      entrypoints: comprehension.entrypoints,
-      first_read_path: comprehension.first_read_path,
-      key_paths: comprehension.key_paths,
-      critical_paths: comprehension.critical_paths,
-      defer_for_now: comprehension.defer_for_now,
-      agent_hints: comprehension.agent_hints,
-    };
+    });
 
     const html = renderHtmlReport(contextIndex);
 
@@ -93,19 +72,10 @@ describe("HTML report renderer (8.2)", () => {
     const scan = await scanRepository(input);
     const signals = await extractSignals(scan);
     const comprehension = buildComprehension(input, scan, signals);
-    const contextIndex = {
-      schema_version: comprehension.schema_version,
-      repo: comprehension.repo,
-      meta: comprehension.meta,
-      artifacts: comprehension.artifacts,
-      graph: comprehension.graph,
+    const contextIndex = renderContextIndex({
+      ...comprehension,
       entrypoints: comprehension.entrypoints.map((e) => ({ ...e, confidence: "medium" as const })),
-      first_read_path: comprehension.first_read_path,
-      key_paths: comprehension.key_paths,
-      critical_paths: comprehension.critical_paths,
-      defer_for_now: comprehension.defer_for_now,
-      agent_hints: comprehension.agent_hints,
-    };
+    });
 
     const html = renderHtmlReport(contextIndex);
 
@@ -123,19 +93,7 @@ describe("HTML report renderer (8.2)", () => {
     const scan = await scanRepository(input);
     const signals = await extractSignals(scan);
     const comprehension = buildComprehension(input, scan, signals);
-    const contextIndex = {
-      schema_version: comprehension.schema_version,
-      repo: comprehension.repo,
-      meta: comprehension.meta,
-      artifacts: comprehension.artifacts,
-      graph: comprehension.graph,
-      entrypoints: comprehension.entrypoints,
-      first_read_path: comprehension.first_read_path,
-      key_paths: comprehension.key_paths,
-      critical_paths: comprehension.critical_paths,
-      defer_for_now: comprehension.defer_for_now,
-      agent_hints: comprehension.agent_hints,
-    };
+    const contextIndex = renderContextIndex(comprehension);
 
     const html = renderHtmlReport(contextIndex);
 
@@ -155,20 +113,7 @@ describe("HTML report renderer (8.2)", () => {
 
     expect(comprehension.critical_paths.length).toBeGreaterThan(0);
 
-    const contextIndex = {
-      schema_version: comprehension.schema_version,
-      repo: comprehension.repo,
-      meta: comprehension.meta,
-      artifacts: comprehension.artifacts,
-      graph: comprehension.graph,
-      entrypoints: comprehension.entrypoints,
-      first_read_path: comprehension.first_read_path,
-      key_paths: comprehension.key_paths,
-      critical_paths: comprehension.critical_paths,
-      defer_for_now: comprehension.defer_for_now,
-      agent_hints: comprehension.agent_hints,
-    };
-
+    const contextIndex = renderContextIndex(comprehension);
     const html = renderHtmlReport(contextIndex);
 
     expect(html).toContain("Critical Paths");
@@ -184,20 +129,10 @@ describe("HTML report renderer (8.2)", () => {
     const scan = await scanRepository(input);
     const signals = await extractSignals(scan);
     const comprehension = buildComprehension(input, scan, signals);
-
-    const contextIndex = {
-      schema_version: comprehension.schema_version,
-      repo: comprehension.repo,
-      meta: comprehension.meta,
-      artifacts: comprehension.artifacts,
-      graph: comprehension.graph,
-      entrypoints: comprehension.entrypoints,
-      first_read_path: comprehension.first_read_path,
-      key_paths: comprehension.key_paths,
-      critical_paths: comprehension.critical_paths,
+    const contextIndex = renderContextIndex({
+      ...comprehension,
       defer_for_now: [],
-      agent_hints: comprehension.agent_hints,
-    };
+    });
 
     const html = renderHtmlReport(contextIndex);
 
@@ -214,20 +149,10 @@ describe("HTML report renderer (8.2)", () => {
     const scan = await scanRepository(input);
     const signals = await extractSignals(scan);
     const comprehension = buildComprehension(input, scan, signals);
-
-    const contextIndex = {
-      schema_version: comprehension.schema_version,
-      repo: comprehension.repo,
-      meta: comprehension.meta,
+    const contextIndex = renderContextIndex({
+      ...comprehension,
       artifacts: { manifests: comprehension.artifacts.manifests, commands: [] },
-      graph: comprehension.graph,
-      entrypoints: comprehension.entrypoints,
-      first_read_path: comprehension.first_read_path,
-      key_paths: comprehension.key_paths,
-      critical_paths: comprehension.critical_paths,
-      defer_for_now: comprehension.defer_for_now,
-      agent_hints: comprehension.agent_hints,
-    };
+    });
 
     const html = renderHtmlReport(contextIndex);
 

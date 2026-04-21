@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import type {
   Comprehension,
   RepoInput,
@@ -80,14 +82,24 @@ export function buildComprehension(
     addEdge(signalEdge);
   }
 
+  const hints = scan.detected.framework_hints;
+  const isApp = hints.includes("nextjs") || hints.includes("react");
+  const isService = hints.includes("express");
+  const isTool = hints.includes("node-cli");
+  const isLibrary = hints.includes("library");
+  const appServiceCount = (isApp ? 1 : 0) + (isService ? 1 : 0) + (isTool ? 1 : 0);
   const repoShape: RepoMetadata["repo_shape"] =
-    scan.detected.framework_hints.includes("node-cli")
-      ? "tool"
-      : scan.detected.framework_hints.includes("express")
-        ? "service"
-        : scan.detected.framework_hints.includes("nextjs") || scan.detected.framework_hints.includes("react")
-          ? "application"
-          : "mixed";
+    appServiceCount > 1
+      ? "mixed"
+      : isApp
+        ? "application"
+        : isService
+          ? "service"
+          : isTool
+            ? "tool"
+            : isLibrary
+              ? "library"
+              : "mixed";
 
   const keyPaths: KeyPath[] = [];
   const seenKeyPaths = new Set<string>();
@@ -184,16 +196,66 @@ export function buildComprehension(
     });
   }
 
-  const criticalPaths: CriticalPath[] = signals.entrypoints.map((entrypoint) => {
-    const downstream = signals.edges
-      .filter((edge) => edge.from === entrypoint.path)
-      .map((edge) => edge.to);
+  // Build adjacency map for transitive graph walk
+  // Only include semantically meaningful edge kinds for traversal
+  const TRAVERSABLE_EDGE_KINDS = new Set(["import", "require", "reference", "route"]);
+  const adjacency = new Map<string, string[]>();
+  for (const edge of signals.edges) {
+    if (!TRAVERSABLE_EDGE_KINDS.has(edge.kind)) {
+      continue;
+    }
+    const existing = adjacency.get(edge.from);
+    if (existing !== undefined) {
+      existing.push(edge.to);
+    } else {
+      adjacency.set(edge.from, [edge.to]);
+    }
+  }
+
+  // Deduplicate entrypoints by path, keeping highest confidence or most specific kind
+  const KIND_PRIORITY = ["cli", "server", "app", "library", "test-harness", "build"] as const;
+  const seenEntrypoints = new Map<string, (typeof signals.entrypoints)[number]>();
+  for (const entrypoint of signals.entrypoints) {
+    const existing = seenEntrypoints.get(entrypoint.path);
+    if (!existing) {
+      seenEntrypoints.set(entrypoint.path, entrypoint);
+    } else {
+      const existingPriority = KIND_PRIORITY.indexOf(existing.kind as typeof KIND_PRIORITY[number]);
+      const newPriority = KIND_PRIORITY.indexOf(entrypoint.kind as typeof KIND_PRIORITY[number]);
+      if (
+        newPriority < existingPriority ||
+        (newPriority === existingPriority && entrypoint.confidence === "high" && existing.confidence !== "high")
+      ) {
+        seenEntrypoints.set(entrypoint.path, entrypoint);
+      }
+    }
+  }
+  const uniqueEntrypoints = [...seenEntrypoints.values()];
+
+  const criticalPaths: CriticalPath[] = uniqueEntrypoints.map((entrypoint) => {
+    // BFS up to 5 steps from the entrypoint
+    const steps: string[] = [entrypoint.path];
+    const visited = new Set<string>([entrypoint.path]);
+    const queue: string[] = [entrypoint.path];
+
+    while (queue.length > 0 && steps.length < 5) {
+      const current = queue.shift()!;
+      const neighbors = adjacency.get(current) ?? [];
+
+      for (const neighbor of neighbors) {
+        if (!visited.has(neighbor) && steps.length < 5) {
+          visited.add(neighbor);
+          steps.push(neighbor);
+          queue.push(neighbor);
+        }
+      }
+    }
 
     return {
       name: `${entrypoint.kind}:${entrypoint.path}`,
-      steps: [entrypoint.path, ...downstream].slice(0, 5),
-      reason: `Shows the first structural hop from ${entrypoint.path}.`,
-      confidence: downstream.length > 0 ? "medium" : entrypoint.confidence,
+      steps,
+      reason: `Shows the structural execution path from ${entrypoint.path}.`,
+      confidence: steps.length > 1 ? "medium" : entrypoint.confidence,
       evidence: [...entrypoint.evidence],
     };
   });
@@ -202,6 +264,7 @@ export function buildComprehension(
     path: candidate.path,
     reason: candidate.reason,
     confidence: candidate.confidence,
+    evidence: candidate.evidence,
   }));
 
   const agentHints = [];
@@ -256,15 +319,27 @@ export function buildComprehension(
       text: `Defer ${deferForNow[0]?.path ?? "generated outputs"} during the first pass.`,
       reason: "Generated, build, and vendor paths tend to distract from primary source logic.",
       confidence: "medium" as const,
-      evidence: deferForNow[0]?.path !== undefined ? [deferForNow[0].path] : undefined,
+      evidence: [deferForNow[0].path],
     });
+  }
+
+  function entrypointSummary(kind: string): string {
+    switch (kind) {
+      case "cli": return "CLI entrypoint — invoked directly from the command line.";
+      case "server": return "Server entrypoint — starts the HTTP/network service.";
+      case "app": return "Application entrypoint — bootstraps the UI or app runtime.";
+      case "library": return "Library entrypoint — public API surface for consumers.";
+      case "test-harness": return "Test harness entrypoint — runs the test suite.";
+      case "build": return "Build entrypoint — drives the compilation or bundling step.";
+      default: return "Likely execution entrypoint.";
+    }
   }
 
   return {
     schema_version: "1.0",
     run_id: input.run_id,
     repo: {
-      name: input.repo_root.split("/").at(-1) ?? "repo",
+      name: path.basename(input.repo_root) || "repo",
       root: input.repo_root,
       repo_shape: repoShape,
       primary_languages: scan.detected.languages,
@@ -275,7 +350,7 @@ export function buildComprehension(
       run_id: input.run_id,
       snapshot_id: input.run_id,
       generated_at: new Date().toISOString(),
-      included_paths: input.include.length > 0 ? [...input.include] : allPathEntries.map((entry) => entry.path),
+      included_paths: [...input.include],
       excluded_paths: scan.excluded_paths,
     },
     artifacts: {
@@ -286,9 +361,9 @@ export function buildComprehension(
       nodes,
       edges,
     },
-    entrypoints: signals.entrypoints.map((entrypoint) => ({
+    entrypoints: uniqueEntrypoints.map((entrypoint) => ({
       ...entrypoint,
-      summary: "Likely execution entrypoint.",
+      summary: entrypointSummary(entrypoint.kind),
     })),
     first_read_path: firstReadPath,
     key_paths: keyPaths,
