@@ -26,7 +26,7 @@ type PackageJson = {
 
 type ExtractedImport = {
   readonly specifier: string;
-  readonly kind: "import" | "require";
+  readonly kind: "import" | "require" | "reference";
 };
 
 const SOURCE_FILE_EXTENSIONS = [
@@ -123,6 +123,8 @@ function extractRelativeImports(fileContent: string): ExtractedImport[] {
     { kind: "import", pattern: /\bimport\s+["']([^"']+)["']/gu },
     { kind: "import", pattern: /\bexport\s+[^'"]*?from\s+["']([^"']+)["']/gu },
     { kind: "require", pattern: /\brequire\(\s*["']([^"']+)["']\s*\)/gu },
+    { kind: "reference", pattern: /^\/\/\/\s*<reference\s+path=["']([^"']+)["']/gm },
+    { kind: "reference", pattern: /^\/\/\/\s*<reference\s+types=["']([^"']+)["']/gm },
   ];
 
   for (const { kind, pattern } of patterns) {
@@ -368,6 +370,21 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
           kind: "test-of",
         });
       }
+    }
+  }
+
+  // Route edges: link route handler files to their parent directory (route hierarchy)
+  for (const filePath of knownFilePaths) {
+    const basename = path.posix.basename(filePath);
+
+    if (basename === "route.ts" || basename === "route.js" || basename === "route.tsx") {
+      const parentDir = path.posix.dirname(filePath);
+
+      edges.push({
+        from: filePath,
+        to: parentDir,
+        kind: "route",
+      });
     }
   }
 
