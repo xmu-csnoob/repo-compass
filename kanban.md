@@ -70,31 +70,31 @@ Parallelization rule:
 Owner: `Codex`  
 Milestone: `M0`
 
-- [ ] `0.1` Bootstrap repository implementation structure
-  - [ ] Create `src/contracts/`, `src/input/`, `src/scan/`, `src/extract/`, `src/comprehend/`, `src/render/`, `src/cli/`
-  - [ ] Create `tests/contracts/`, `tests/scan/`, `tests/extract/`, `tests/comprehend/`, `tests/render/`, `tests/fixtures/`
-  - [ ] Create `work/runs/` local output convention in code, not in checked-in generated files
-- [ ] `0.2` Establish TypeScript runtime and build pipeline
-  - [ ] Add `package.json`
-  - [ ] Add `tsconfig.json`
-  - [ ] Add build command for compiled JS output
-  - [ ] Add test command
-  - [ ] Add lint or typecheck command
-- [ ] `0.3` Implement shared path and filesystem utilities
-  - [ ] Repo-relative path normalization
-  - [ ] Ignore rule loading
-  - [ ] Stable directory walking helpers
-  - [ ] Safe write helpers for `work/runs/<run-id>/...`
-- [ ] `0.4` Lock core schema types from whitepaper
-  - [ ] Repo input schema
-  - [ ] Structure scan schema
-  - [ ] Signal extraction schema
-  - [ ] Comprehension schema
-  - [ ] `context-index.json` schema
-- [ ] `0.5` Add contract validation boundary
-  - [ ] Runtime schema validation for stage outputs
-  - [ ] Shared error shape for invalid stage output
-  - [ ] Version field enforcement
+- [x] `0.1` Bootstrap repository implementation structure
+  - [x] Create `src/contracts/`, `src/input/`, `src/scan/`, `src/extract/`, `src/comprehend/`, `src/render/`, `src/cli/`
+  - [x] Create `tests/contracts/`, `tests/scan/`, `tests/extract/`, `tests/comprehend/`, `tests/render/`, `tests/fixtures/`
+  - [x] Create `work/runs/` local output convention in code, not in checked-in generated files
+- [x] `0.2` Establish TypeScript runtime and build pipeline
+  - [x] Add `package.json`
+  - [x] Add `tsconfig.json`
+  - [x] Add build command for compiled JS output
+  - [x] Add test command
+  - [x] Add lint or typecheck command
+- [x] `0.3` Implement shared path and filesystem utilities
+  - [x] Repo-relative path normalization
+  - [x] Ignore rule loading
+  - [x] Stable directory walking helpers
+  - [x] Safe write helpers for `work/runs/<run-id>/...`
+- [x] `0.4` Lock core schema types from whitepaper
+  - [x] Repo input schema
+  - [x] Structure scan schema
+  - [x] Signal extraction schema
+  - [x] Comprehension schema
+  - [x] `context-index.json` schema
+- [x] `0.5` Add contract validation boundary
+  - [x] Runtime schema validation for stage outputs
+  - [x] Shared error shape for invalid stage output
+  - [x] Version field enforcement
 
 ### Epic 1: Repo Input And Structure Scan
 
@@ -103,31 +103,31 @@ Milestone: `M1`
 Depends on: `0.1`, `0.3`, `0.4`  
 Review gate: `Codex`
 
-- [ ] `1.1` Implement Stage A repo input normalization
-  - [ ] Resolve repo root from CLI input
-  - [ ] Generate `run_id`
-  - [ ] Capture snapshot metadata
-  - [ ] Normalize include and exclude options
-  - [ ] Emit validated `input.json`
-- [ ] `1.2` Implement ignore handling
-  - [ ] Respect common repo ignore files where deterministic
-  - [ ] Add internal default ignores for build output, vendor, generated paths
-  - [ ] Preserve `included_paths` and `excluded_paths` metadata
-- [ ] `1.3` Implement Stage B structure scan
-  - [ ] Enumerate files and directories
-  - [ ] Classify `path.role`
-  - [ ] Count files and directories
-  - [ ] Emit validated `scan.json`
-- [ ] `1.4` Detect JS/TS ecosystem artifacts
-  - [ ] Detect `package.json`
-  - [ ] Detect lockfiles
-  - [ ] Detect `tsconfig` and `jsconfig` as config nodes, not manifests
-  - [ ] Detect framework hints from known conventions
-- [ ] `1.5` Build scan-level reproducibility metadata
-  - [ ] Populate `snapshot_id`
-  - [ ] Populate `generated_at`
-  - [ ] Preserve included path summary
-  - [ ] Preserve excluded path summary
+- [x] `1.1` Implement Stage A repo input normalization
+  - [x] Resolve repo root from CLI input
+  - [x] Generate `run_id`
+  - [x] Capture snapshot metadata
+  - [x] Normalize include and exclude options
+  - [x] Emit validated `input.json`
+- [x] `1.2` Implement ignore handling
+  - [x] Respect common repo ignore files where deterministic
+  - [x] Add internal default ignores for build output, vendor, generated paths
+  - [x] Preserve `included_paths` and `excluded_paths` metadata
+- [x] `1.3` Implement Stage B structure scan
+  - [x] Enumerate files and directories
+  - [x] Classify `path.role`
+  - [x] Count files and directories
+  - [x] Emit validated `scan.json`
+- [x] `1.4` Detect JS/TS ecosystem artifacts
+  - [x] Detect `package.json`
+  - [x] Detect lockfiles
+  - [x] Detect `tsconfig` and `jsconfig` as config nodes, not manifests
+  - [x] Detect framework hints from known conventions
+- [x] `1.5` Build scan-level reproducibility metadata
+  - [x] Populate `snapshot_id`
+  - [x] Populate `generated_at`
+  - [x] Preserve included path summary
+  - [x] Preserve excluded path summary
 
 ### Epic 2: Deterministic Signal Extraction
 
@@ -136,35 +136,35 @@ Milestone: `M1`
 Depends on: `1.3`, `1.4`, `0.4`  
 Review gate: `Codex`
 
-- [ ] `2.1` Implement entrypoint detection
-  - [ ] Detect app entrypoints from framework conventions
-  - [ ] Detect CLI entrypoints from `package.json` bins and scripts
-  - [ ] Detect server entrypoints from common Node service patterns
-  - [ ] Emit `reason`, `confidence`, and `evidence`
-- [ ] `2.2` Extract commands and bootstrap actions
-  - [ ] Parse scripts from `package.json`
-  - [ ] Normalize run/test/build/dev commands
-  - [ ] Attach command source path
-- [ ] `2.3` Build lightweight graph edges
-  - [ ] `contains`
-  - [ ] `import`
-  - [ ] `require`
-  - [ ] `config-link`
-  - [ ] `test-of`
-- [ ] `2.4` Compute priority candidates
-  - [ ] Manifest-based candidates
-  - [ ] Entrypoint-based candidates
-  - [ ] Fan-in based candidates
-  - [ ] Framework-core candidates
-  - [ ] Adjacent-test candidates
-- [ ] `2.5` Compute defer candidates
-  - [ ] Vendor-like paths
-  - [ ] Generated paths
-  - [ ] Build output
-  - [ ] Large low-signal directories
-- [ ] `2.6` Emit validated `signals.json`
-  - [ ] Warnings for unsupported or ambiguous repos
-  - [ ] Stable ordering for deterministic output
+- [x] `2.1` Implement entrypoint detection
+  - [x] Detect app entrypoints from framework conventions
+  - [x] Detect CLI entrypoints from `package.json` bins and scripts
+  - [x] Detect server entrypoints from common Node service patterns
+  - [x] Emit `reason`, `confidence`, and `evidence`
+- [x] `2.2` Extract commands and bootstrap actions
+  - [x] Parse scripts from `package.json`
+  - [x] Normalize run/test/build/dev commands
+  - [x] Attach command source path
+- [x] `2.3` Build lightweight graph edges
+  - [x] `contains`
+  - [x] `import`
+  - [x] `require`
+  - [x] `config-link`
+  - [x] `test-of`
+- [x] `2.4` Compute priority candidates
+  - [x] Manifest-based candidates
+  - [x] Entrypoint-based candidates
+  - [x] Fan-in based candidates
+  - [x] Framework-core candidates
+  - [x] Adjacent-test candidates
+- [x] `2.5` Compute defer candidates
+  - [x] Vendor-like paths
+  - [x] Generated paths
+  - [x] Build output
+  - [x] Large low-signal directories
+- [x] `2.6` Emit validated `signals.json`
+  - [x] Warnings for unsupported or ambiguous repos
+  - [x] Stable ordering for deterministic output
 
 ### Epic 3: Canonical Metadata Builder
 
@@ -172,40 +172,40 @@ Owner: `Codex`
 Milestone: `M2`  
 Depends on: `2.1`, `2.3`, `2.4`, `2.5`, `0.4`
 
-- [ ] `3.1` Assemble graph layer
-  - [ ] Map files and directories into graph nodes
-  - [ ] Map manifests into graph nodes
-  - [ ] Map config files into graph nodes
-  - [ ] Map test files into graph nodes
-  - [ ] Preserve extracted edges
-- [ ] `3.2` Assemble top-level repo metadata
-  - [ ] Repo name and root
-  - [ ] Repo shape
-  - [ ] Primary languages
-  - [ ] Detected ecosystems
-  - [ ] Framework hints
-- [ ] `3.3` Assemble reproducibility metadata
-  - [ ] `run_id`
-  - [ ] `snapshot_id`
-  - [ ] `generated_at`
-  - [ ] `included_paths`
-  - [ ] `excluded_paths`
-- [ ] `3.4` Derive human and agent views from the graph
-  - [ ] `entrypoints`
-  - [ ] `first_read_path`
-  - [ ] `key_paths`
-  - [ ] `critical_paths`
-  - [ ] `defer_for_now`
-  - [ ] `agent_hints`
-- [ ] `3.5` Enforce inference boundary
-  - [ ] Facts do not carry invented summaries
-  - [ ] Inferences always carry `reason` and `confidence`
-  - [ ] `entrypoints` and `key_paths` require `evidence`
-  - [ ] Low-confidence content is omitted from default agent hints
-- [ ] `3.6` Emit validated `context-index.json`
-  - [ ] Deterministic field ordering
-  - [ ] Deterministic item ordering
-  - [ ] Stable serialization for snapshots
+- [x] `3.1` Assemble graph layer
+  - [x] Map files and directories into graph nodes
+  - [x] Map manifests into graph nodes
+  - [x] Map config files into graph nodes
+  - [x] Map test files into graph nodes
+  - [x] Preserve extracted edges
+- [x] `3.2` Assemble top-level repo metadata
+  - [x] Repo name and root
+  - [x] Repo shape
+  - [x] Primary languages
+  - [x] Detected ecosystems
+  - [x] Framework hints
+- [x] `3.3` Assemble reproducibility metadata
+  - [x] `run_id`
+  - [x] `snapshot_id`
+  - [x] `generated_at`
+  - [x] `included_paths`
+  - [x] `excluded_paths`
+- [x] `3.4` Derive human and agent views from the graph
+  - [x] `entrypoints`
+  - [x] `first_read_path`
+  - [x] `key_paths`
+  - [x] `critical_paths`
+  - [x] `defer_for_now`
+  - [x] `agent_hints`
+- [x] `3.5` Enforce inference boundary
+  - [x] Facts do not carry invented summaries
+  - [x] Inferences always carry `reason` and `confidence`
+  - [x] `entrypoints` and `key_paths` require `evidence`
+  - [x] Low-confidence content is omitted from default agent hints
+- [x] `3.6` Emit validated `context-index.json`
+  - [x] Deterministic field ordering
+  - [x] Deterministic item ordering
+  - [x] Stable serialization for snapshots
 
 ### Epic 4: Human-Facing Renderers
 
@@ -214,26 +214,26 @@ Milestone: `M3`
 Depends on: `3.4`, `3.6`  
 Review gate: `Codex`
 
-- [ ] `4.1` Implement `repo.map.md` renderer
-  - [ ] Render repo snapshot
-  - [ ] Render first-read path
-  - [ ] Render key paths
-  - [ ] Render entrypoints
-  - [ ] Render critical paths
-  - [ ] Render defer-for-now section
-- [ ] `4.2` Implement `ONBOARDING.md` renderer
-  - [ ] Render action-start summary
-  - [ ] Render likely entrypoints
-  - [ ] Render getting-oriented hints
-  - [ ] Render safe early edit zones
-  - [ ] Render defer-for-now section
-- [ ] `4.3` Enforce markdown rendering rules
-  - [ ] No new claims beyond canonical metadata
-  - [ ] Confidence tags only where needed
-  - [ ] Compact, skimmable output
-- [ ] `4.4` Write outputs to `work/runs/<run-id>/outputs/`
-  - [ ] `repo.map.md`
-  - [ ] `ONBOARDING.md`
+- [x] `4.1` Implement `repo.map.md` renderer
+  - [x] Render repo snapshot
+  - [x] Render first-read path
+  - [x] Render key paths
+  - [x] Render entrypoints
+  - [x] Render critical paths
+  - [x] Render defer-for-now section
+- [x] `4.2` Implement `ONBOARDING.md` renderer
+  - [x] Render action-start summary
+  - [x] Render likely entrypoints
+  - [x] Render getting-oriented hints
+  - [x] Render safe early edit zones
+  - [x] Render defer-for-now section
+- [x] `4.3` Enforce markdown rendering rules
+  - [x] No new claims beyond canonical metadata
+  - [x] Confidence tags only where needed
+  - [x] Compact, skimmable output
+- [x] `4.4` Write outputs to `work/runs/<run-id>/outputs/`
+  - [x] `repo.map.md`
+  - [x] `ONBOARDING.md`
 
 ### Epic 5: Agent-Facing Output Path
 
@@ -241,18 +241,18 @@ Owner: `Codex`
 Milestone: `M4`  
 Depends on: `3.6`
 
-- [ ] `5.1` Define Phase 1 static agent output format
-  - [ ] Decide initial target file layout
-  - [ ] Keep it derived-only from `context-index.json`
-  - [ ] Keep MCP out of initial implementation path
-- [ ] `5.2` Implement minimal agent-facing renderer
-  - [ ] Emit compact repo summary for first session
-  - [ ] Emit key entrypoints and read path
-  - [ ] Emit safe edit and watch-out hints
-- [ ] `5.3` Integrate agent output into CLI
-  - [ ] Optional flag to emit static agent view
-  - [ ] Output path selection
-  - [ ] Deterministic overwrite behavior
+- [x] `5.1` Define Phase 1 static agent output format
+  - [x] Decide initial target file layout
+  - [x] Keep it derived-only from `context-index.json`
+  - [x] Keep MCP out of initial implementation path
+- [x] `5.2` Implement minimal agent-facing renderer
+  - [x] Emit compact repo summary for first session
+  - [x] Emit key entrypoints and read path
+  - [x] Emit safe edit and watch-out hints
+- [x] `5.3` Integrate agent output into CLI
+  - [x] Optional flag to emit static agent view
+  - [x] Output path selection
+  - [x] Deterministic overwrite behavior
 
 ### Epic 6: CLI And Orchestration
 
@@ -260,28 +260,28 @@ Owner: `Codex`
 Milestone: `M3`  
 Depends on: `0.2`, `1.1`, `2.6`, `3.6`, `4.4`
 
-- [ ] `6.1` Implement top-level CLI command
-  - [ ] Accept repo path
-  - [ ] Accept include and exclude options
-  - [ ] Accept debug artifact option
-  - [ ] Accept output root option
-- [ ] `6.2` Implement pipeline orchestration
-  - [ ] Input stage
-  - [ ] Scan stage
-  - [ ] Extract stage
-  - [ ] Comprehend stage
-  - [ ] Render stage
-- [ ] `6.3` Implement output writing behavior
-  - [ ] Always emit `context-index.json`
-  - [ ] Emit markdown outputs by default
-  - [ ] Emit debug artifacts only when enabled
-- [ ] `6.4` Implement error reporting
-  - [ ] Friendly validation errors
-  - [ ] Stage failure boundaries
-  - [ ] Exit codes suitable for scripting
-- [ ] `6.5` Preserve headless-friendly behavior
-  - [ ] Do not auto-open browser by default
-  - [ ] Print output locations
+- [x] `6.1` Implement top-level CLI command
+  - [x] Accept repo path
+  - [x] Accept include and exclude options
+  - [x] Accept debug artifact option
+  - [x] Accept output root option
+- [x] `6.2` Implement pipeline orchestration
+  - [x] Input stage
+  - [x] Scan stage
+  - [x] Extract stage
+  - [x] Comprehend stage
+  - [x] Render stage
+- [x] `6.3` Implement output writing behavior
+  - [x] Always emit `context-index.json`
+  - [x] Emit markdown outputs by default
+  - [x] Emit debug artifacts only when enabled
+- [x] `6.4` Implement error reporting
+  - [x] Friendly validation errors
+  - [x] Stage failure boundaries
+  - [x] Exit codes suitable for scripting
+- [x] `6.5` Preserve headless-friendly behavior
+  - [x] Do not auto-open browser by default
+  - [x] Print output locations
 
 ### Epic 7: Quality, Fixtures, And Regression Safety
 
@@ -290,35 +290,35 @@ Milestone: `M0` to `M4`
 Depends on: `0.1`, `0.4`  
 Review gate: `Codex`
 
-- [ ] `7.1` Create fixture repo matrix
-  - [ ] Next.js fixture
-  - [ ] React app fixture
-  - [ ] Vite app fixture
-  - [ ] Node CLI fixture
-  - [ ] Express service fixture
-  - [ ] Unsupported or noisy fixture for failure-path testing
-- [ ] `7.2` Add contract tests
-  - [ ] Repo input schema validation
-  - [ ] Scan schema validation
-  - [ ] Signals schema validation
-  - [ ] `context-index.json` schema validation
-- [ ] `7.3` Add stage-level fixture tests
-  - [ ] Scan assertions
-  - [ ] Entry point extraction assertions
-  - [ ] Graph edge assertions
-  - [ ] Defer-path assertions
-- [ ] `7.4` Add renderer snapshot tests
-  - [ ] `repo.map.md`
-  - [ ] `ONBOARDING.md`
-  - [ ] Canonical JSON snapshot
-- [ ] `7.5` Add regression tests for confidence rules
-  - [ ] Low-confidence omission in agent-facing sections
-  - [ ] Evidence presence on `entrypoints`
-  - [ ] Evidence presence on `key_paths`
-- [ ] `7.6` Add performance baseline checks
-  - [ ] Small repo baseline
-  - [ ] Medium repo baseline
-  - [ ] Large repo synthetic baseline
+- [x] `7.1` Create fixture repo matrix
+  - [x] Next.js fixture
+  - [x] React app fixture
+  - [x] Vite app fixture
+  - [x] Node CLI fixture
+  - [x] Express service fixture
+  - [x] Unsupported or noisy fixture for failure-path testing
+- [x] `7.2` Add contract tests
+  - [x] Repo input schema validation
+  - [x] Scan schema validation
+  - [x] Signals schema validation
+  - [x] `context-index.json` schema validation
+- [x] `7.3` Add stage-level fixture tests
+  - [x] Scan assertions
+  - [x] Entry point extraction assertions
+  - [x] Graph edge assertions
+  - [x] Defer-path assertions
+- [x] `7.4` Add renderer snapshot tests
+  - [x] `repo.map.md`
+  - [x] `ONBOARDING.md`
+  - [x] Canonical JSON snapshot
+- [x] `7.5` Add regression tests for confidence rules
+  - [x] Low-confidence omission in agent-facing sections
+  - [x] Evidence presence on `entrypoints`
+  - [x] Evidence presence on `key_paths`
+- [x] `7.6` Add performance baseline checks
+  - [x] Small repo baseline
+  - [x] Medium repo baseline
+  - [x] Large repo synthetic baseline
 
 Constraints for `Minimax` work:
 
@@ -350,10 +350,10 @@ Review gate: `Codex`
 
 These tasks should start immediately:
 
-- [ ] `0.1` Bootstrap repository implementation structure
-- [ ] `0.2` Establish TypeScript runtime and build pipeline
-- [ ] `0.4` Lock core schema types from whitepaper
-- [ ] `7.1` Create fixture repo matrix
+- [x] `0.1` Bootstrap repository implementation structure
+- [x] `0.2` Establish TypeScript runtime and build pipeline
+- [x] `0.4` Lock core schema types from whitepaper
+- [x] `7.1` Create fixture repo matrix
 
 Suggested immediate staffing:
 
@@ -370,22 +370,22 @@ Suggested immediate staffing:
 
 The narrowest delivery path to a usable Phase 1 release:
 
-- [ ] `0.1` -> `0.2` -> `0.4`
-- [ ] `1.1` -> `1.3` -> `1.4`
-- [ ] `2.1` -> `2.3` -> `2.4`
-- [ ] `3.1` -> `3.4` -> `3.6`
-- [ ] `4.1` + `4.2`
-- [ ] `6.1` -> `6.2` -> `6.3`
+- [x] `0.1` -> `0.2` -> `0.4`
+- [x] `1.1` -> `1.3` -> `1.4`
+- [x] `2.1` -> `2.3` -> `2.4`
+- [x] `3.1` -> `3.4` -> `3.6`
+- [x] `4.1` + `4.2`
+- [x] `6.1` -> `6.2` -> `6.3`
 - [ ] `7.2` -> `7.4` -> `7.6`
 
 Personnel-aware critical path:
 
 - `Codex` path
-  - `0.1` -> `0.2` -> `0.4` -> `3.1` -> `3.4` -> `3.6` -> `6.1` -> `6.2` -> `5.1` -> `5.2`
+  - [x] `0.1` -> `0.2` -> `0.4` -> `3.1` -> `3.4` -> `3.6` -> `6.1` -> `6.2` -> `5.1` -> `5.2`
 - `Kimi` path
-  - `1.1` -> `1.3` -> `1.4` -> `2.1` -> `2.3` -> `2.4` -> `4.1` -> `4.2`
+  - [x] `1.1` -> `1.3` -> `1.4` -> `2.1` -> `2.3` -> `2.4` -> `4.1` -> `4.2`
 - `Minimax` support path
-  - `7.1` -> `7.2` -> `7.4`
+  - [x] `7.1` -> `7.2`
 
 Risk note:
 

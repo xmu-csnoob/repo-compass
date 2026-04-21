@@ -1,0 +1,302 @@
+{
+  "schema_version": "1.0",
+  "repo": {
+    "name": "node-cli",
+    "root": "<FIXTURE_ROOT>",
+    "repo_shape": "tool",
+    "primary_languages": [
+      "JSON",
+      "Markdown",
+      "TypeScript"
+    ],
+    "detected_ecosystems": [
+      "node"
+    ],
+    "framework_hints": [
+      "node-cli"
+    ]
+  },
+  "meta": {
+    "run_id": "<RUN_ID>",
+    "snapshot_id": "<RUN_ID>",
+    "generated_at": "<GENERATED_AT>",
+    "included_paths": [
+      "package.json",
+      "README.md",
+      "src",
+      "src/commands.ts",
+      "src/index.ts",
+      "tsconfig.json"
+    ],
+    "excluded_paths": []
+  },
+  "artifacts": {
+    "manifests": [
+      {
+        "path": "package.json",
+        "kind": "package-json"
+      }
+    ],
+    "commands": [
+      {
+        "source_path": "package.json",
+        "name": "dev",
+        "command": "tsx src/index.ts"
+      },
+      {
+        "source_path": "package.json",
+        "name": "build",
+        "command": "tsc"
+      },
+      {
+        "source_path": "package.json",
+        "name": "test",
+        "command": "vitest run"
+      },
+      {
+        "source_path": "package.json",
+        "name": "lint",
+        "command": "eslint src/"
+      }
+    ]
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "package.json",
+        "path": "package.json",
+        "kind": "manifest",
+        "role": "unknown"
+      },
+      {
+        "id": "README.md",
+        "path": "README.md",
+        "kind": "file",
+        "role": "docs"
+      },
+      {
+        "id": "src",
+        "path": "src",
+        "kind": "directory",
+        "role": "unknown"
+      },
+      {
+        "id": "src/commands.ts",
+        "path": "src/commands.ts",
+        "kind": "file",
+        "role": "source"
+      },
+      {
+        "id": "src/index.ts",
+        "path": "src/index.ts",
+        "kind": "entrypoint",
+        "role": "source"
+      },
+      {
+        "id": "tsconfig.json",
+        "path": "tsconfig.json",
+        "kind": "config",
+        "role": "config"
+      }
+    ],
+    "edges": [
+      {
+        "from": "src",
+        "to": "src/commands.ts",
+        "kind": "contains"
+      },
+      {
+        "from": "src",
+        "to": "src/index.ts",
+        "kind": "contains"
+      },
+      {
+        "from": "src/commands.ts",
+        "to": "tsconfig.json",
+        "kind": "config-link"
+      },
+      {
+        "from": "src/index.ts",
+        "to": "tsconfig.json",
+        "kind": "config-link"
+      }
+    ]
+  },
+  "entrypoints": [
+    {
+      "id": "cli:src/index.ts",
+      "path": "src/index.ts",
+      "kind": "cli",
+      "summary": "Likely execution entrypoint.",
+      "reason": "Script \"dev\" points to this path.",
+      "confidence": "high",
+      "evidence": [
+        "scripts.dev"
+      ]
+    },
+    {
+      "id": "app:src/index.ts",
+      "path": "src/index.ts",
+      "kind": "app",
+      "summary": "Likely execution entrypoint.",
+      "reason": "Matched a common JS/TS repo entrypoint convention.",
+      "confidence": "high",
+      "evidence": [
+        "src/index.ts"
+      ]
+    }
+  ],
+  "first_read_path": [
+    {
+      "path": "package.json",
+      "why_now": "Start here to understand workspace shape, scripts, and dependencies.",
+      "reason": "Manifest files anchor the repository's install and run workflows.",
+      "confidence": "high",
+      "evidence": [
+        "package-json"
+      ]
+    },
+    {
+      "path": "src/index.ts",
+      "why_now": "This is likely the first runtime hop.",
+      "reason": "Script \"dev\" points to this path.",
+      "confidence": "high",
+      "evidence": [
+        "scripts.dev"
+      ]
+    },
+    {
+      "path": "tsconfig.json",
+      "why_now": "This path appears central to repo comprehension.",
+      "reason": "Multiple files depend on this path, so it likely coordinates shared behavior.",
+      "confidence": "medium",
+      "evidence": [
+        "fan_in:2"
+      ]
+    },
+    {
+      "path": "README.md",
+      "why_now": "This path appears central to repo comprehension.",
+      "reason": "README is usually the shortest path to global project context.",
+      "confidence": "medium",
+      "evidence": [
+        "README.md"
+      ]
+    }
+  ],
+  "key_paths": [
+    {
+      "path": "src/index.ts",
+      "kind": "file",
+      "role": "entry",
+      "summary": "Likely runtime entrypoint.",
+      "priority": "high",
+      "reason": "Script \"dev\" points to this path.",
+      "confidence": "high",
+      "evidence": [
+        "scripts.dev"
+      ]
+    },
+    {
+      "path": "package.json",
+      "kind": "file",
+      "role": "config",
+      "summary": "Package manifest defines the primary Node workspace metadata.",
+      "priority": "high",
+      "reason": "Package manifest defines the primary Node workspace metadata.",
+      "confidence": "high",
+      "evidence": [
+        "package.json"
+      ]
+    },
+    {
+      "path": "tsconfig.json",
+      "kind": "file",
+      "role": "core",
+      "summary": "Multiple files depend on this path, so it likely coordinates shared behavior.",
+      "priority": "medium",
+      "reason": "Multiple files depend on this path, so it likely coordinates shared behavior.",
+      "confidence": "medium",
+      "evidence": [
+        "fan_in:2"
+      ]
+    },
+    {
+      "path": "README.md",
+      "kind": "file",
+      "role": "docs",
+      "summary": "Repository overview and contributor-facing orientation.",
+      "priority": "medium",
+      "reason": "README is usually the shortest path to global project context.",
+      "confidence": "medium",
+      "evidence": [
+        "README.md"
+      ]
+    }
+  ],
+  "critical_paths": [
+    {
+      "name": "cli:src/index.ts",
+      "steps": [
+        "src/index.ts",
+        "tsconfig.json"
+      ],
+      "reason": "Shows the first structural hop from src/index.ts.",
+      "confidence": "medium",
+      "evidence": [
+        "scripts.dev"
+      ]
+    },
+    {
+      "name": "app:src/index.ts",
+      "steps": [
+        "src/index.ts",
+        "tsconfig.json"
+      ],
+      "reason": "Shows the first structural hop from src/index.ts.",
+      "confidence": "medium",
+      "evidence": [
+        "src/index.ts"
+      ]
+    }
+  ],
+  "defer_for_now": [],
+  "agent_hints": [
+    {
+      "kind": "setup",
+      "text": "Run npm install before editing or executing scripts.",
+      "reason": "The repository uses a package.json-based Node workflow.",
+      "confidence": "high",
+      "evidence": [
+        "package.json"
+      ]
+    },
+    {
+      "kind": "run",
+      "text": "Use npm run dev to start the primary workflow.",
+      "reason": "package.json defines the dev script.",
+      "confidence": "high",
+      "evidence": [
+        "scripts.dev"
+      ]
+    },
+    {
+      "kind": "test",
+      "text": "Use npm test to exercise the existing test workflow.",
+      "reason": "package.json exposes a test script.",
+      "confidence": "high",
+      "evidence": [
+        "scripts.test"
+      ]
+    },
+    {
+      "kind": "safe-edit-zone",
+      "text": "Start edits near src/index.ts before touching generated or vendor paths.",
+      "reason": "Core source paths are safer than build, generated, or vendor outputs.",
+      "confidence": "medium",
+      "evidence": [
+        "src/index.ts"
+      ]
+    }
+  ]
+}

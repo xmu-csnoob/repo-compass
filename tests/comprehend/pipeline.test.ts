@@ -73,7 +73,7 @@ describe("phase 1 comprehension pipeline", () => {
     const contextIndex = renderContextIndex(comprehension);
 
     expect(contextIndex.meta.excluded_paths).toEqual(
-      expect.arrayContaining([".next", ".output", "vendor"]),
+      expect.arrayContaining([".next", ".output", "coverage", "dist"]),
     );
   });
 });
