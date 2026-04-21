@@ -74,6 +74,16 @@ async function ensureSafeDirectoryChain(
   return currentPath;
 }
 
+async function ensureStableParentDirectory(expectedParentPath: string): Promise<void> {
+  await ensureRealDirectory(expectedParentPath);
+
+  const canonicalParentPath = normalizeAbsolutePath(await realpath(expectedParentPath));
+
+  if (canonicalParentPath !== normalizeAbsolutePath(expectedParentPath)) {
+    throw new Error(`Refusing to use unstable artifact parent "${expectedParentPath}"`);
+  }
+}
+
 export async function walkDirectoryStable(
   repoRoot: string,
   options: WalkDirectoryOptions = {},
@@ -162,17 +172,26 @@ export async function walkDirectoryStable(
   );
 }
 
-async function writeFileAtomic(targetPath: string, content: string): Promise<void> {
+async function writeFileAtomic(
+  targetPath: string,
+  content: string,
+  expectedParentPath: string,
+): Promise<void> {
   const parentDirectory = path.dirname(targetPath);
   const temporaryPath = path.join(
     parentDirectory,
     `.${path.basename(targetPath)}.${process.pid}.${Date.now()}.tmp`,
   );
 
-  await mkdir(parentDirectory, { recursive: true });
+  if (normalizeAbsolutePath(parentDirectory) !== normalizeAbsolutePath(expectedParentPath)) {
+    throw new Error(`Artifact parent mismatch for "${targetPath}"`);
+  }
+
+  await ensureStableParentDirectory(expectedParentPath);
 
   try {
     await writeFile(temporaryPath, content, "utf8");
+    await ensureStableParentDirectory(expectedParentPath);
     await rename(temporaryPath, targetPath);
   } finally {
     await rm(temporaryPath, { force: true });
@@ -217,7 +236,7 @@ export async function writeRunArtifact(
     throw new Error(`Artifact parent mismatch for "${absoluteArtifactPath}"`);
   }
 
-  await writeFileAtomic(absoluteArtifactPath, content);
+  await writeFileAtomic(absoluteArtifactPath, content, absoluteParentPath);
 
   return absoluteArtifactPath;
 }
