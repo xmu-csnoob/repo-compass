@@ -318,6 +318,59 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
     }
   }
 
+  // Pre-index source files by parent directory for efficient config-link resolution
+  const sourceFilesByDir = new Map<string, string[]>();
+  for (const sourcePath of knownFilePaths) {
+    const dir = path.posix.dirname(sourcePath);
+    const existing = sourceFilesByDir.get(dir);
+    if (existing !== undefined) {
+      existing.push(sourcePath);
+    } else {
+      sourceFilesByDir.set(dir, [sourcePath]);
+    }
+  }
+
+  for (const pathEntry of scan.paths) {
+    if (pathEntry.role !== "config" || pathEntry.kind !== "file") {
+      continue;
+    }
+
+    const basename = path.posix.basename(pathEntry.path);
+    const parentDir = path.posix.dirname(pathEntry.path);
+
+    if (basename.startsWith("tsconfig") || basename === "jsconfig.json") {
+      // tsconfig links to source files under its directory (source depends on its tsconfig)
+      const sourcesInScope = sourceFilesByDir.get(parentDir) ?? [];
+      for (const sourcePath of sourcesInScope) {
+        if (sourcePath.startsWith(`${parentDir}/`)) {
+          edges.push({
+            from: sourcePath,
+            to: pathEntry.path,
+            kind: "config-link",
+          });
+        }
+      }
+    }
+  }
+
+  for (const filePath of knownFilePaths) {
+    const basename = path.posix.basename(filePath);
+
+    if (basename.includes(".test.") || basename.includes(".spec.")) {
+      const targetPath = basename.includes(".test.")
+        ? filePath.replace(/\.test\./g, ".")
+        : filePath.replace(/\.spec\./g, ".");
+
+      if (knownFilePaths.has(targetPath)) {
+        edges.push({
+          from: filePath,
+          to: targetPath,
+          kind: "test-of",
+        });
+      }
+    }
+  }
+
   const fanInCounts = new Map<string, number>();
 
   for (const edge of edges) {
