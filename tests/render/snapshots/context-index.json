@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "repo": {
     "name": "node-cli",
     "root": "<FIXTURE_ROOT>",
@@ -234,5 +234,14 @@
         "src"
       ]
     }
-  ]
+  ],
+  "warnings": [
+    "Skipping bin entrypoint \"./dist/index.js\" because it is not present in the scanned snapshot."
+  ],
+  "freshness": {
+    "mode": "off",
+    "status": "unknown",
+    "generated_from": "full",
+    "reason": "Freshness tracking is disabled for this run."
+  }
 }

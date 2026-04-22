@@ -15,7 +15,7 @@ function fixturePath(name: string): string {
 describe("HTML report renderer (8.2)", () => {
   it("renders valid HTML for node-cli fixture", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "test-html",
       repo_root: fixturePath("node-cli"),
       output_root: fixturePath("node-cli"),
@@ -40,7 +40,7 @@ describe("HTML report renderer (8.2)", () => {
 
   it("escapes HTML special characters in content", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "test-html-escape",
       repo_root: fixturePath("node-cli"),
       output_root: fixturePath("node-cli"),
@@ -64,7 +64,7 @@ describe("HTML report renderer (8.2)", () => {
 
   it("renders confidence badges for medium and low confidence items", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "test-html-confidence",
       repo_root: fixturePath("node-cli"),
       output_root: fixturePath("node-cli"),
@@ -85,7 +85,7 @@ describe("HTML report renderer (8.2)", () => {
 
   it("renders nextjs-app fixture with nextjs framework", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "test-html-nextjs",
       repo_root: fixturePath("nextjs-app"),
       output_root: fixturePath("nextjs-app"),
@@ -102,7 +102,7 @@ describe("HTML report renderer (8.2)", () => {
 
   it("renders critical paths section when present", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "test-html-critical",
       repo_root: fixturePath("nextjs-app"),
       output_root: fixturePath("nextjs-app"),
@@ -121,7 +121,7 @@ describe("HTML report renderer (8.2)", () => {
 
   it("renders empty defer_for_now state message", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "test-html-defer",
       repo_root: fixturePath("node-cli"),
       output_root: fixturePath("node-cli"),
@@ -141,7 +141,7 @@ describe("HTML report renderer (8.2)", () => {
 
   it("renders empty commands state message", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "test-html-no-commands",
       repo_root: fixturePath("node-cli"),
       output_root: fixturePath("node-cli"),

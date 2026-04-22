@@ -43,7 +43,7 @@ async function createSyntheticLargeRepo(fileCount: number): Promise<string> {
 
 async function runFullPipeline(repoRoot: string, runId: string) {
   const input = normalizeRepoInput({
-    schema_version: "1.0",
+    schema_version: "2.0",
     run_id: runId,
     repo_root: repoRoot,
     output_root: repoRoot,

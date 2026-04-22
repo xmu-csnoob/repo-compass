@@ -9,7 +9,15 @@ export const PATH_ROLES = [
   "unknown",
 ] as const;
 
-export const MANIFEST_KINDS = ["package-json", "lockfile", "other"] as const;
+export const MANIFEST_KINDS = [
+  "package-json",
+  "lockfile",
+  "pyproject",
+  "setup-py",
+  "setup-cfg",
+  "requirements",
+  "other",
+] as const;
 
 export const ENTRYPOINT_KINDS = [
   "app",
@@ -56,6 +64,7 @@ export const GRAPH_EDGE_KINDS = [
   "route",
   "config-link",
   "test-of",
+  "module-link",
 ] as const;
 
 export const PRIORITY_SIGNALS = [
@@ -65,6 +74,7 @@ export const PRIORITY_SIGNALS = [
   "framework-core",
   "workflow-core",
   "adjacent-test",
+  "root-central",
 ] as const;
 
 export const AGENT_HINT_KINDS = [
@@ -74,3 +84,14 @@ export const AGENT_HINT_KINDS = [
   "safe-edit-zone",
   "watch-out",
 ] as const;
+
+export const FRESHNESS_MODES = ["off", "watch", "ci"] as const;
+
+export const FRESHNESS_STATUSES = [
+  "fresh",
+  "stale",
+  "degraded",
+  "unknown",
+] as const;
+
+export const FRESHNESS_GENERATED_FROM = ["full", "incremental"] as const;

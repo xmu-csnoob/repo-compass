@@ -29,7 +29,7 @@ describe("CLI pipeline", () => {
     const result = await runPipeline([repoRoot, "--debug"]);
     const runRoot = path.join(repoRoot, "work", "runs", result.runId);
 
-    await expect(readFile(path.join(runRoot, "context-index.json"), "utf8")).resolves.toContain('"schema_version": "1.0"');
+    await expect(readFile(path.join(runRoot, "context-index.json"), "utf8")).resolves.toContain('"schema_version": "2.0"');
     await expect(readFile(path.join(runRoot, "outputs", "repo.map.md"), "utf8")).resolves.toContain("# Repo Map");
     await expect(readFile(path.join(runRoot, "outputs", "ONBOARDING.md"), "utf8")).resolves.toContain("# ONBOARDING");
     await expect(readFile(path.join(runRoot, "scan.json"), "utf8")).resolves.toContain('"framework_hints"');

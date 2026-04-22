@@ -25,7 +25,7 @@ async function makeFixtureCopy(name: string): Promise<string> {
 async function runFullPipeline(fixtureName: string) {
   const repoRoot = await makeFixtureCopy(fixtureName);
   const input = normalizeRepoInput({
-    schema_version: "1.0",
+    schema_version: "2.0",
     run_id: `test-confidence-${fixtureName}`,
     repo_root: repoRoot,
     output_root: repoRoot,

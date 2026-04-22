@@ -354,7 +354,7 @@ export function buildComprehension(
   }
 
   return {
-    schema_version: "1.0",
+    schema_version: "2.0",
     run_id: input.run_id,
     repo: {
       name: path.basename(input.repo_root) || "repo",
@@ -388,5 +388,15 @@ export function buildComprehension(
     critical_paths: criticalPaths,
     defer_for_now: deferForNow,
     agent_hints: agentHints,
+    warnings: [...signals.warnings],
+    freshness: {
+      mode: input.options.freshness_mode,
+      status: "unknown",
+      generated_from: "full",
+      reason:
+        input.options.freshness_mode === "off"
+          ? "Freshness tracking is disabled for this run."
+          : "Freshness mode is declared, but verified freshness regeneration is not implemented yet.",
+    },
   };
 }

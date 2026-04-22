@@ -18,7 +18,7 @@ const VALID_DATETIME = "2026-04-21T12:00:00Z";
 // ---------------------------------------------------------------------------
 describe("repoInputSchema", () => {
   const minimalValid = {
-    schema_version: "1.0",
+    schema_version: "2.0",
     run_id: "run-001",
     repo_root: "/home/user/repo",
     output_root: "/home/user/repo-compass/output",
@@ -39,7 +39,8 @@ describe("repoInputSchema", () => {
         detect_frameworks: false,
         extract_import_graph: false,
         emit_debug_artifacts: true,
-        emit_agent_views: false,
+        emit_agent_start: false,
+        freshness_mode: "ci",
       },
     };
     expect(validateContract(repoInputSchema, full, "repoInput")).toMatchObject(full);
@@ -53,7 +54,7 @@ describe("repoInputSchema", () => {
   });
 
   it("throws on wrong schema_version literal", () => {
-    const invalid = { ...minimalValid, schema_version: "2.0" };
+    const invalid = { ...minimalValid, schema_version: "1.0" };
     expect(() => validateContract(repoInputSchema, invalid, "repoInput")).toThrow(
       ContractValidationError,
     );
@@ -79,7 +80,7 @@ describe("repoInputSchema", () => {
 // ---------------------------------------------------------------------------
 describe("structureScanSchema", () => {
   const minimalValid = {
-    schema_version: "1.0",
+    schema_version: "2.0",
     run_id: "run-001",
     repo: {
       root: "/home/user/repo",
@@ -156,7 +157,7 @@ describe("structureScanSchema", () => {
 // ---------------------------------------------------------------------------
 describe("signalExtractionSchema", () => {
   const minimalValid = {
-    schema_version: "1.0",
+    schema_version: "2.0",
     run_id: "run-001",
     entrypoints: [
       {
@@ -251,7 +252,7 @@ describe("signalExtractionSchema", () => {
 // ---------------------------------------------------------------------------
 describe("comprehensionSchema", () => {
   const minimalValid = {
-    schema_version: "1.0",
+    schema_version: "2.0",
     run_id: "run-001",
     repo: {
       name: "my-repo",
@@ -282,6 +283,13 @@ describe("comprehensionSchema", () => {
     critical_paths: [],
     defer_for_now: [],
     agent_hints: [],
+    warnings: [],
+    freshness: {
+      mode: "off",
+      status: "unknown",
+      generated_from: "full",
+      reason: "Freshness tracking is disabled for this run.",
+    },
   };
 
   it("parses a minimal valid comprehension", () => {
@@ -318,7 +326,7 @@ describe("comprehensionSchema", () => {
 describe("contextIndexSchema", () => {
   // contextIndexSchema is comprehensionSchema.omit({ run_id: true })
   const minimalValid = {
-    schema_version: "1.0",
+    schema_version: "2.0",
     repo: {
       name: "my-repo",
       root: "/home/user/repo",
@@ -348,6 +356,13 @@ describe("contextIndexSchema", () => {
     critical_paths: [],
     defer_for_now: [],
     agent_hints: [],
+    warnings: [],
+    freshness: {
+      mode: "off",
+      status: "unknown",
+      generated_from: "full",
+      reason: "Freshness tracking is disabled for this run.",
+    },
   };
 
   it("parses a minimal valid contextIndex", () => {
