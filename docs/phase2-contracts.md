@@ -197,7 +197,7 @@ Purpose:
   "warnings": ["string"],
   "freshness": {
     "mode": "off|watch|ci",
-    "status": "fresh|stale|unknown",
+    "status": "fresh|stale|degraded|unknown",
     "generated_from": "full|incremental",
     "reason": "string"
   }
@@ -209,6 +209,14 @@ Required behavior:
 - new fields should be additive wherever possible
 - freshness metadata must not imply correctness beyond what evidence supports
 - unknown freshness is preferable to false freshness certainty
+
+Freshness status semantics:
+
+- `fresh`: regenerated from a trusted full run or equivalent verified rebuild
+- `stale`: known to be out of date relative to the repository snapshot
+- `degraded`: artifact exists, but completeness is reduced or only incrementally
+  refreshed without verified equivalence to a full run
+- `unknown`: trust state cannot be established confidently
 
 ## 5. Compatibility Rules
 
@@ -268,6 +276,7 @@ If Phase 2 ships freshness support, contracts must define:
 - base snapshot identity
 - changed path set identity
 - stale versus fresh versus unknown semantics
+- degraded semantics for partially trusted incremental output
 - watch-mode versus CI regeneration mode
 - degraded-mode signaling when freshness confidence is insufficient
 - equivalence expectations versus full-run output
@@ -283,7 +292,7 @@ Do not expand without updating this document:
 - `manifest.kind`:
   `package-json|lockfile|pyproject|setup-py|setup-cfg|requirements|other`
 - `freshness.mode`: `off|watch|ci`
-- `freshness.status`: `fresh|stale|unknown`
+- `freshness.status`: `fresh|stale|degraded|unknown`
 - `edge.kind`:
   `contains|import|require|reference|route|config-link|test-of|module-link`
 

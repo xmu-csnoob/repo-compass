@@ -219,7 +219,7 @@ It should not:
 Freshness logic should live in a bounded module that:
 
 - decides whether regeneration is needed
-- records stale versus fresh versus unknown state
+- records stale versus fresh versus degraded versus unknown state
 - triggers canonical rebuilds
 
 It should not:
