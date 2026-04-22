@@ -1,14 +1,8 @@
 """Items router with sample REST endpoints."""
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from app.models import Item
 
 router = APIRouter(prefix="/items", tags=["items"])
-
-
-class Item(BaseModel):
-    name: str
-    description: str | None = None
-    price: float
 
 
 _db: dict[int, Item] = {}
