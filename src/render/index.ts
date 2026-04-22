@@ -41,6 +41,12 @@ export function renderRepoMap(contextIndex: ContextIndex): string {
     `- Languages: ${contextIndex.repo.primary_languages.join(", ") || "unknown"}`,
     `- Framework hints: ${contextIndex.repo.framework_hints.join(", ") || "none"}`,
     "",
+    "## Freshness",
+    `- Mode: \`${contextIndex.freshness.mode}\``,
+    `- Status: \`${contextIndex.freshness.status}\``,
+    `- Generated from: \`${contextIndex.freshness.generated_from}\``,
+    `- Reason: ${contextIndex.freshness.reason}`,
+    "",
     "## First Read Path",
     ...contextIndex.first_read_path.map((item) => `- \`${item.path}\`${formatConfidence(item.confidence)}: ${item.why_now}`),
     "",
@@ -107,27 +113,219 @@ export function renderOnboarding(contextIndex: ContextIndex): string {
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
+// Rough heuristic: ~4 characters per token on average.
+const CHARS_PER_TOKEN = 4;
+const TOKEN_BUDGET = 2000;
+const MAX_CHARS = TOKEN_BUDGET * CHARS_PER_TOKEN;
+
+// Section trimming priority (lower = trimmed first).
+// Priority order: Warnings > Entrypoints > First Read > Commands > Key Paths > Defer > Freshness.
+const SECTION_PRIORITY = {
+  header: 100,
+  warnings: 70,
+  entrypoints: 60,
+  first_read: 50,
+  commands: 40,
+  key_paths: 30,
+  defer_for_now: 20,
+  freshness: 10,
+} as const;
+
+type SectionKey = keyof typeof SECTION_PRIORITY;
+
+
+function compressLines(lines: string[], maxLines: number): string[] {
+  if (lines.length <= maxLines) {
+    return lines;
+  }
+  return [...lines.slice(0, maxLines), `  ... and ${lines.length - maxLines} more`];
+}
+
+interface Section {
+  key: SectionKey;
+  originalLines: string[];
+  lines: string[];
+  priority: number;
+  dropped: boolean;
+}
+
 export function renderAgentStart(contextIndex: ContextIndex): string {
-  const lines = [
-    "# Agent Start",
-    "",
-    `Repo: ${contextIndex.repo.name}`,
-    `Structural shape: ${contextIndex.repo.repo_shape}`,
-    `Frameworks: ${contextIndex.repo.framework_hints.join(", ") || "none"}`,
-    "",
-    "## Read First",
-    ...contextIndex.first_read_path.map((item) => `- ${item.path}: ${item.reason}`),
-    "",
-    "## Entrypoints",
-    ...contextIndex.entrypoints.map((item) => `- ${item.path} (${item.kind}): ${item.reason}`),
-    "",
-    "## Commands",
-    ...contextIndex.artifacts.commands.map((command) => `- ${command.name}: ${command.command}`),
-    "",
-    "## Hints",
-    ...contextIndex.agent_hints.map((hint) => `- [${hint.kind}] ${hint.text}`),
+  const sections: Section[] = [];
+
+  // Header (never trimmed)
+  sections.push({
+    key: "header",
+    originalLines: [
+      "# Agent Start",
+      "",
+      `Repo: ${contextIndex.repo.name}`,
+      `Structural shape: ${contextIndex.repo.repo_shape}`,
+      `Frameworks: ${contextIndex.repo.framework_hints.join(", ") || "none"}`,
+      "",
+    ],
+    lines: [],
+    priority: SECTION_PRIORITY.header,
+    dropped: false,
+  });
+
+  // Warnings (priority 70, never dropped)
+  if (contextIndex.warnings.length > 0) {
+    const warningLines = [
+      "## Warnings And Uncertainty",
+      ...contextIndex.warnings.map((w) => `- ${w}`),
+      "",
+    ];
+    sections.push({
+      key: "warnings",
+      originalLines: warningLines,
+      lines: [],
+      priority: SECTION_PRIORITY.warnings,
+      dropped: false,
+    });
+  }
+
+  // Entrypoints (priority 60)
+  if (contextIndex.entrypoints.length > 0) {
+    const entrypointLines = [
+      "## Entrypoints",
+      ...contextIndex.entrypoints.map((item) => `- ${item.path} (${item.kind}): ${item.reason}`),
+      "",
+    ];
+    sections.push({
+      key: "entrypoints",
+      originalLines: entrypointLines,
+      lines: [],
+      priority: SECTION_PRIORITY.entrypoints,
+      dropped: false,
+    });
+  }
+
+  // First Read Path (priority 50)
+  if (contextIndex.first_read_path.length > 0) {
+    const readLines = [
+      "## Read First",
+      ...contextIndex.first_read_path.map((item) => `- ${item.path}: ${item.reason}`),
+      "",
+    ];
+    sections.push({
+      key: "first_read",
+      originalLines: readLines,
+      lines: [],
+      priority: SECTION_PRIORITY.first_read,
+      dropped: false,
+    });
+  }
+
+  // Commands (priority 40)
+  if (contextIndex.artifacts.commands.length > 0) {
+    const commandLines = [
+      "## Commands",
+      ...contextIndex.artifacts.commands.map((c) => `- ${c.name}: ${c.command}`),
+      "",
+    ];
+    sections.push({
+      key: "commands",
+      originalLines: commandLines,
+      lines: [],
+      priority: SECTION_PRIORITY.commands,
+      dropped: false,
+    });
+  }
+
+  // Key Paths (priority 30)
+  if (contextIndex.key_paths.length > 0) {
+    const keyPathLines = [
+      "## Key Paths",
+      ...contextIndex.key_paths.map((item) => `- ${item.path} (${item.role}): ${item.summary}`),
+      "",
+    ];
+    sections.push({
+      key: "key_paths",
+      originalLines: keyPathLines,
+      lines: [],
+      priority: SECTION_PRIORITY.key_paths,
+      dropped: false,
+    });
+  }
+
+  // Defer For Now (priority 20)
+  if (contextIndex.defer_for_now.length > 0) {
+    const deferLines = [
+      "## Defer For Now",
+      ...contextIndex.defer_for_now.map((item) => `- ${item.path}: ${item.reason}`),
+      "",
+    ];
+    sections.push({
+      key: "defer_for_now",
+      originalLines: deferLines,
+      lines: [],
+      priority: SECTION_PRIORITY.defer_for_now,
+      dropped: false,
+    });
+  }
+
+  // Freshness (priority 10)
+  const freshnessLines = [
+    "## Freshness",
+    `- Mode: ${contextIndex.freshness.mode}`,
+    `- Status: ${contextIndex.freshness.status}`,
+    `- Generated from: ${contextIndex.freshness.generated_from}`,
+    `- Reason: ${contextIndex.freshness.reason}`,
     "",
   ];
+  sections.push({
+    key: "freshness",
+    originalLines: freshnessLines,
+    lines: [],
+    priority: SECTION_PRIORITY.freshness,
+    dropped: false,
+  });
+
+  // Initialize all sections to their original lines
+  for (const section of sections) {
+    section.lines = [...section.originalLines];
+  }
+
+  let totalChars = sections.reduce((sum, s) => sum + s.lines.join("\n").length, 0);
+
+  // Trim from lowest priority upward, never drop warnings (priority >= 70) or header
+  if (totalChars > MAX_CHARS) {
+    const trimmable = sections
+      .filter((s) => s.priority < 70 && s.key !== "header")
+      .sort((a, b) => a.priority - b.priority);
+
+    for (const section of trimmable) {
+      if (totalChars <= MAX_CHARS) break;
+      if (section.dropped) continue;
+
+      // Stage 1: compress to half
+      const halfCount = Math.max(3, Math.ceil(section.lines.length / 2));
+      section.lines = compressLines(section.lines, halfCount);
+      totalChars = sections.reduce((sum, s) => sum + s.lines.join("\n").length, 0);
+
+      // Stage 2: if still over, compress to quarter
+      if (totalChars > MAX_CHARS && section.lines.length > 3) {
+        const quarterCount = Math.max(3, Math.ceil(section.originalLines.length / 4));
+        section.lines = compressLines(section.originalLines, quarterCount);
+        totalChars = sections.reduce((sum, s) => sum + s.lines.join("\n").length, 0);
+      }
+
+      // Stage 3: if still over, drop the section
+      if (totalChars > MAX_CHARS) {
+        section.lines = [];
+        section.dropped = true;
+        totalChars = sections.reduce((sum, s) => sum + s.lines.join("\n").length, 0);
+      }
+    }
+  }
+
+  // Flatten sections, preserving order and dropping empty ones
+  const lines: string[] = [];
+  for (const section of sections) {
+    if (section.lines.length > 0) {
+      lines.push(...section.lines);
+    }
+  }
 
   return `${lines.join("\n").trimEnd()}\n`;
 }

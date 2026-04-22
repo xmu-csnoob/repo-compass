@@ -6,6 +6,12 @@
 - Languages: JSON, Markdown, TypeScript
 - Framework hints: node-cli
 
+## Freshness
+- Mode: `off`
+- Status: `unknown`
+- Generated from: `full`
+- Reason: Freshness tracking is disabled for this run.
+
 ## First Read Path
 - `package.json`: Start here to understand workspace shape, scripts, and dependencies.
 - `src/index.ts`: This is likely the first runtime hop.
