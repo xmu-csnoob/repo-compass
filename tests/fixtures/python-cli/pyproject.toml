@@ -1,0 +1,9 @@
+[project]
+name = "python-cli"
+version = "0.1.0"
+description = "A sample Python CLI tool for fixture testing"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+python-cli = "python_cli_repo.cli:main"

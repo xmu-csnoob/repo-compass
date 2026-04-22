@@ -1,0 +1,11 @@
+{
+  "name": "mixed-frontend",
+  "version": "0.1.0",
+  "dependencies": {
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  }
+}
