@@ -4,6 +4,9 @@ import {
   AGENT_HINT_KINDS,
   CONFIDENCE_LEVELS,
   ENTRYPOINT_KINDS,
+  FRESHNESS_GENERATED_FROM,
+  FRESHNESS_MODES,
+  FRESHNESS_STATUSES,
   GRAPH_EDGE_KINDS,
   GRAPH_NODE_KINDS,
   KEY_PATH_ROLES,
@@ -13,10 +16,13 @@ import {
   REPO_SHAPES,
 } from "./enums.js";
 
-const schemaVersion = z.literal("1.0");
+const schemaVersion = z.literal("2.0");
 const repoRelativePath = z.string().min(1);
 const confidenceLevelSchema = z.enum(CONFIDENCE_LEVELS);
 const evidenceSchema = z.array(z.string().min(1)).min(1);
+const freshnessModeSchema = z.enum(FRESHNESS_MODES);
+const freshnessStatusSchema = z.enum(FRESHNESS_STATUSES);
+const freshnessGeneratedFromSchema = z.enum(FRESHNESS_GENERATED_FROM);
 
 export const repoInputSchema = z.object({
   schema_version: schemaVersion,
@@ -32,7 +38,8 @@ export const repoInputSchema = z.object({
       detect_frameworks: z.boolean().default(true),
       extract_import_graph: z.boolean().default(true),
       emit_debug_artifacts: z.boolean().default(false),
-      emit_agent_views: z.boolean().default(true),
+      emit_agent_start: z.boolean().default(true),
+      freshness_mode: freshnessModeSchema.default("off"),
     })
     .optional()
     .default({}),
@@ -201,6 +208,13 @@ export const comprehensionSchema = z.object({
   critical_paths: z.array(criticalPathSchema),
   defer_for_now: z.array(deferForNowItemSchema),
   agent_hints: z.array(agentHintSchema),
+  warnings: z.array(z.string().min(1)),
+  freshness: z.object({
+    mode: freshnessModeSchema,
+    status: freshnessStatusSchema,
+    generated_from: freshnessGeneratedFromSchema,
+    reason: z.string().min(1),
+  }),
 }).strict();
 
 export const contextIndexSchema = comprehensionSchema

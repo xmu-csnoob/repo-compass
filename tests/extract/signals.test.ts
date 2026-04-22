@@ -48,7 +48,7 @@ describe("extractSignals", () => {
     await writeFile(path.join(repoRoot, "src", "helper.js"), "module.exports = {};\n", "utf8");
 
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-extract-mixed",
       repo_root: repoRoot,
       output_root: repoRoot,
@@ -83,7 +83,7 @@ describe("extractSignals", () => {
     await writeFile(path.join(repoRoot, "src", "math.test.js"), "import { add } from './math.js';\n", "utf8");
 
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-extract-testof",
       repo_root: repoRoot,
       output_root: repoRoot,
@@ -110,7 +110,7 @@ describe("extractSignals", () => {
     await writeFile(path.join(repoRoot, "src", "app.ts"), "export const app = true;\n", "utf8");
 
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-extract-configlink",
       repo_root: repoRoot,
       output_root: repoRoot,
@@ -148,7 +148,7 @@ describe("extractSignals", () => {
     );
 
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-extract-ref",
       repo_root: repoRoot,
       output_root: repoRoot,
@@ -174,7 +174,7 @@ describe("extractSignals", () => {
     await writeFile(path.join(repoRoot, "app/api/hello/route.ts"), "export function GET() {}", "utf8");
 
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-extract-route",
       repo_root: repoRoot,
       output_root: repoRoot,
@@ -213,7 +213,7 @@ describe("extractSignals", () => {
     await writeFile(path.join(repoRoot, "src", "entry-server.ts"), "export const server = true;\n", "utf8");
 
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-extract-vue-entry",
       repo_root: repoRoot,
       output_root: repoRoot,
@@ -240,7 +240,7 @@ describe("extractSignals", () => {
     await writeFile(path.join(repoRoot, "docker-build.sh"), "#!/bin/sh\n", "utf8");
 
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-extract-defer-infra",
       repo_root: repoRoot,
       output_root: repoRoot,

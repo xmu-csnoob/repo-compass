@@ -561,7 +561,7 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
   }
 
   const signals: SignalExtraction = {
-    schema_version: "1.0",
+    schema_version: "2.0",
     run_id: scan.run_id,
     entrypoints,
     commands,

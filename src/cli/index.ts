@@ -17,20 +17,23 @@ type CliOptions = {
   readonly include: string[];
   readonly exclude: string[];
   readonly debug: boolean;
-  readonly emitAgentViews: boolean;
+  readonly emitAgentStart: boolean;
+  readonly freshnessMode: "off" | "watch" | "ci";
 };
 
 function printHelp(): void {
   process.stdout.write(
     [
-      "Usage: repo-compass [repo-root] [--output-root <path>] [--include <path>] [--exclude <path>] [--debug] [--agent-views]",
+      "Usage: repo-compass [repo-root] [--output-root <path>] [--include <path>] [--exclude <path>] [--debug] [--agent-start] [--freshness-mode <off|watch|ci>]",
       "",
       "Options:",
       "  --output-root <path>  Override the root used for generated artifacts.",
       "  --include <path>      Restrict analysis to a repo-relative subtree.",
       "  --exclude <path>      Add an explicit exclude rule.",
       "  --debug               Emit intermediate debug artifacts.",
-      "  --agent-views         Emit static agent-facing outputs.",
+      "  --agent-start         Emit the startup markdown artifact.",
+      "  --agent-views         Legacy alias for --agent-start.",
+      "  --freshness-mode      Declare freshness mode metadata: off, watch, or ci.",
       "  --help                Show this message.",
       "",
     ].join("\n"),
@@ -57,7 +60,8 @@ function parseArgs(argv: readonly string[]): CliOptions {
   const exclude: string[] = [];
   let outputRoot: string | undefined;
   let debug = false;
-  let emitAgentViews = false;
+  let emitAgentStart = false;
+  let freshnessMode: "off" | "watch" | "ci" = "off";
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
@@ -77,11 +81,21 @@ function parseArgs(argv: readonly string[]): CliOptions {
     }
 
     if (token === "--agent-views") {
-      emitAgentViews = true;
+      emitAgentStart = true;
       continue;
     }
 
-    if (token === "--output-root" || token === "--include" || token === "--exclude") {
+    if (token === "--agent-start") {
+      emitAgentStart = true;
+      continue;
+    }
+
+    if (
+      token === "--output-root" ||
+      token === "--include" ||
+      token === "--exclude" ||
+      token === "--freshness-mode"
+    ) {
       const value = argv[index + 1];
 
       if (value === undefined) {
@@ -94,6 +108,12 @@ function parseArgs(argv: readonly string[]): CliOptions {
         outputRoot = value;
       } else if (token === "--include") {
         include.push(value);
+      } else if (token === "--freshness-mode") {
+        if (value !== "off" && value !== "watch" && value !== "ci") {
+          throw new Error(`Invalid freshness mode "${value}"`);
+        }
+
+        freshnessMode = value;
       } else {
         exclude.push(value);
       }
@@ -112,7 +132,8 @@ function parseArgs(argv: readonly string[]): CliOptions {
     include,
     exclude,
     debug,
-    emitAgentViews,
+    emitAgentStart,
+    freshnessMode,
   };
 }
 
@@ -124,7 +145,7 @@ async function buildRepoInput(options: CliOptions): Promise<RepoInput> {
   await ensureDirectoryExists(outputRoot);
 
   return normalizeRepoInput({
-    schema_version: "1.0",
+    schema_version: "2.0",
     run_id: generateRunId(),
     repo_root: repoRoot,
     output_root: outputRoot,
@@ -132,7 +153,8 @@ async function buildRepoInput(options: CliOptions): Promise<RepoInput> {
     exclude: options.exclude,
     options: {
       emit_debug_artifacts: options.debug,
-      emit_agent_views: options.emitAgentViews,
+      emit_agent_start: options.emitAgentStart,
+      freshness_mode: options.freshnessMode,
     },
   });
 }
@@ -171,7 +193,7 @@ export async function runPipeline(argv: readonly string[]): Promise<{
     ),
   ];
 
-  if (input.options.emit_agent_views) {
+  if (input.options.emit_agent_start) {
     outputPaths.push(
       await writeRunArtifact(
         input.output_root,

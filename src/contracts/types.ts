@@ -1,6 +1,7 @@
 import type { z } from "zod";
 
 import {
+  agentHintSchema,
   commandSchema,
   comprehensionSchema,
   contextIndexSchema,
@@ -14,9 +15,9 @@ import {
   keyPathSchema,
   manifestSchema,
   metaSchema,
+  repoMetadataSchema,
   priorityCandidateSchema,
   repoInputSchema,
-  repoMetadataSchema,
   signalExtractionSchema,
   structurePathSchema,
   structureScanSchema,
@@ -39,5 +40,6 @@ export type FirstReadPathItem = z.infer<typeof firstReadPathItemSchema>;
 export type KeyPath = z.infer<typeof keyPathSchema>;
 export type CriticalPath = z.infer<typeof criticalPathSchema>;
 export type DeferForNowItem = z.infer<typeof deferForNowItemSchema>;
+export type AgentHint = z.infer<typeof agentHintSchema>;
 export type Comprehension = z.infer<typeof comprehensionSchema>;
 export type ContextIndex = z.infer<typeof contextIndexSchema>;

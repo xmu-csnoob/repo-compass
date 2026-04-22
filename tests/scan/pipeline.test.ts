@@ -6,7 +6,7 @@ import { scanRepository } from "../../src/scan/index.js";
 describe("scanRepository", () => {
   it("enforces max_files from the frozen repo input contract", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-max-files",
       repo_root: "tests/fixtures/node-cli",
       output_root: "tests/fixtures/node-cli",

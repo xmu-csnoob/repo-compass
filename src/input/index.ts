@@ -17,6 +17,20 @@ export function normalizeRepoInput(input: unknown): RepoInput {
   }
 
   const candidate = input as Record<string, unknown>;
+  const rawOptions =
+    typeof candidate.options === "object" && candidate.options !== null
+      ? { ...(candidate.options as Record<string, unknown>) }
+      : candidate.options;
+
+  if (
+    typeof rawOptions === "object" &&
+    rawOptions !== null &&
+    rawOptions.emit_agent_start === undefined &&
+    typeof rawOptions.emit_agent_views === "boolean"
+  ) {
+    rawOptions.emit_agent_start = rawOptions.emit_agent_views;
+  }
+
   const normalized = {
     ...candidate,
     repo_root:
@@ -33,6 +47,7 @@ export function normalizeRepoInput(input: unknown): RepoInput {
     exclude: Array.isArray(candidate.exclude)
       ? normalizePathList(candidate.exclude as string[])
       : candidate.exclude,
+    options: rawOptions,
   };
 
   return validateContract(repoInputSchema, normalized, "repoInput");

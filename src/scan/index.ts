@@ -275,7 +275,7 @@ export async function scanRepository(input: RepoInput): Promise<StructureScan> {
   const manifests = collectManifests(filteredEntries);
 
   const scan: StructureScan = {
-    schema_version: "1.0",
+    schema_version: "2.0",
     run_id: input.run_id,
     repo: {
       root: input.repo_root,

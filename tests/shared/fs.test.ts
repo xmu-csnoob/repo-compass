@@ -97,11 +97,11 @@ describe("fs utilities", () => {
       repoRoot,
       "run-abc",
       "context-index.json",
-      { schema_version: "1.0" },
+      { schema_version: "2.0" },
     );
 
     await expect(readFile(artifactPath, "utf8")).resolves.toBe(
-      '{\n  "schema_version": "1.0"\n}\n',
+      '{\n  "schema_version": "2.0"\n}\n',
     );
   });
 

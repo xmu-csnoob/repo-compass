@@ -20,6 +20,8 @@ export function renderContextIndex(
     critical_paths: comprehension.critical_paths,
     defer_for_now: comprehension.defer_for_now,
     agent_hints: comprehension.agent_hints,
+    warnings: comprehension.warnings,
+    freshness: comprehension.freshness,
   };
 
   return validateContract(contextIndexSchema, contextIndex, "contextIndex");

@@ -15,12 +15,12 @@ function fixturePath(name: string): string {
 describe("phase 1 comprehension pipeline", () => {
   it("builds a repo map for the node CLI fixture", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-node-cli",
       repo_root: fixturePath("node-cli"),
       output_root: fixturePath("node-cli"),
       options: {
-        emit_agent_views: true,
+        emit_agent_start: true,
       },
     });
     const scan = await scanRepository(input);
@@ -40,7 +40,7 @@ describe("phase 1 comprehension pipeline", () => {
 
   it("renders onboarding and repo map for the nextjs fixture", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-nextjs",
       repo_root: fixturePath("nextjs-app"),
       output_root: fixturePath("nextjs-app"),
@@ -62,7 +62,7 @@ describe("phase 1 comprehension pipeline", () => {
 
   it("preserves ignored paths in published metadata", async () => {
     const input = normalizeRepoInput({
-      schema_version: "1.0",
+      schema_version: "2.0",
       run_id: "run-noisy",
       repo_root: fixturePath("noisy-repo"),
       output_root: fixturePath("noisy-repo"),
