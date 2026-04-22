@@ -185,9 +185,15 @@ function detectFrameworkHints(entries: readonly WalkEntry[], packageJsonContent?
     }
   }
 
-  // Library: has main or exports but no bin (and not already detected as app/service)
+  // Library: has main or exports but no stronger application/service/CLI signal.
   if (
     !/"bin"\s*:/u.test(packageText) &&
+    !hints.has("nextjs") &&
+    !hints.has("vite") &&
+    !hints.has("react") &&
+    !hints.has("vue") &&
+    !hints.has("express") &&
+    !hints.has("node-cli") &&
     (/"main"\s*:/u.test(packageText) || /"exports"\s*:/u.test(packageText))
   ) {
     hints.add("library");
