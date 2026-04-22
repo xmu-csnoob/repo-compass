@@ -67,4 +67,14 @@ describe("renderer snapshots (7.4)", () => {
 
     expect(actual).toBe(golden);
   });
+
+  it("agent-start.md matches golden snapshot", async () => {
+    const repoRoot = await makeFixtureCopy("node-cli");
+    const result = await runPipeline([repoRoot]);
+    const runRoot = path.join(repoRoot, "work", "runs", result.runId);
+    const actual = await readFile(path.join(runRoot, "outputs", "agent-start.md"), "utf8");
+    const golden = await readFile(path.resolve("tests/render/snapshots/agent-start.md"), "utf8");
+
+    expect(actual).toBe(golden);
+  });
 });

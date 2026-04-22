@@ -644,13 +644,13 @@ Owner: `Minimax` + `Codex` | Milestone: `P2-M4`
   - [x] Schema validation for new fields
   - [x] Freshness enum coverage including `degraded`
   - [x] Additive compatibility checks against Phase 1
-- [ ] `6.3` Add comprehension and ranking tests
+- [x] `6.3` Add comprehension and ranking tests
   - [x] Entry point credibility tests
-  - [ ] Key-path anti-noise tests
+  - [x] Key-path anti-noise tests
   - [x] First-read-path justification tests
   - [x] Warning generation tests
-- [ ] `6.4` Add renderer and startup contract tests
-  - [ ] `agent-start.md` snapshots
+- [x] `6.4` Add renderer and startup contract tests
+  - [x] `agent-start.md` snapshots
   - [x] Overflow trimming order tests
   - [x] Freshness rendering tests
 - [x] `6.5` Produce Phase 2 end-to-end report
@@ -663,23 +663,23 @@ Owner: `Minimax` + `Codex` | Milestone: `P2-M4`
 
 Owner: `Kimi` | Milestone: `P2-M5` | Review gate: `Codex`
 
-- [ ] `7.1` Implement freshness state model
-  - [ ] `fresh`
-  - [ ] `stale`
-  - [ ] `degraded`
-  - [ ] `unknown`
-- [ ] `7.2` Implement watch-mode regeneration
-  - [ ] change detection
-  - [ ] canonical rebuild trigger
-  - [ ] degraded-state fallback when equivalence is not proven
-- [ ] `7.3` Implement CI regeneration path
-  - [ ] explicit CI mode
-  - [ ] canonical rebuild path
-  - [ ] freshness metadata emission
-- [ ] `7.4` Add freshness verification
-  - [ ] watch-mode tests
-  - [ ] CI-mode tests
-  - [ ] incremental-versus-full trust signaling tests
+- [x] `7.1` Implement freshness state model
+  - [x] `fresh`
+  - [x] `stale`
+  - [x] `degraded`
+  - [x] `unknown`
+- [x] `7.2` Implement watch-mode regeneration
+  - [x] change detection
+  - [x] canonical rebuild trigger
+  - [x] degraded-state fallback when equivalence is not proven
+- [x] `7.3` Implement CI regeneration path
+  - [x] explicit CI mode
+  - [x] canonical rebuild path
+  - [x] freshness metadata emission
+- [x] `7.4` Add freshness verification
+  - [x] watch-mode tests
+  - [x] CI-mode tests
+  - [x] incremental-versus-full trust signaling tests
 
 ## Critical Path (Phase 2)
 

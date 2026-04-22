@@ -8,6 +8,7 @@ import { renderAgentStart, renderContextIndex, renderHtmlReport, renderOnboardin
 import { scanRepository } from "../scan/index.js";
 import { extractSignals } from "../extract/index.js";
 import { writeRunArtifact, writeRunJsonArtifact } from "../shared/index.js";
+import { computeFreshness, loadPreviousFreshnessState, saveFreshnessState, buildFreshnessState } from "../freshness/index.js";
 
 import type { RepoInput } from "../contracts/index.js";
 
@@ -166,9 +167,11 @@ export async function runPipeline(argv: readonly string[]): Promise<{
 }> {
   const options = parseArgs(argv);
   const input = await buildRepoInput(options);
+  const previousFreshness = await loadPreviousFreshnessState(input.output_root);
   const scan = await scanRepository(input);
   const signals = await extractSignals(scan);
-  const comprehension = buildComprehension(input, scan, signals);
+  const freshness = computeFreshness(input, scan, previousFreshness);
+  const comprehension = buildComprehension(input, scan, signals, freshness);
   const contextIndex = renderContextIndex(comprehension);
 
   const outputPaths = [
@@ -217,6 +220,8 @@ export async function runPipeline(argv: readonly string[]): Promise<{
       ),
     );
   }
+
+  await saveFreshnessState(input.output_root, buildFreshnessState(input, scan));
 
   return {
     runId: input.run_id,
