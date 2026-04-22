@@ -98,7 +98,7 @@ export function buildComprehension(
     hasLibraryHint && (hasLibraryEntrypoint || !hasCliEntrypoint) && !hasAppHint && !hasServiceHint ? "library" : null,
   ].filter((shape): shape is RepoMetadata["repo_shape"] => shape !== null);
   const repoShape: RepoMetadata["repo_shape"] =
-    structuralShapes.length === 1 ? structuralShapes[0] : "mixed";
+    structuralShapes.length === 1 ? (structuralShapes[0] ?? "mixed") : "mixed";
 
   const keyPaths: KeyPath[] = [];
   const seenKeyPaths = new Set<string>();

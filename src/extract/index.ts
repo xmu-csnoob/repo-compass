@@ -45,6 +45,9 @@ const COMMON_ENTRYPOINTS = [
   "src/index.ts",
   "src/index.tsx",
   "src/main.tsx",
+  "src/entry-client.ts",
+  "src/entry-server.ts",
+  "src/entry-base.ts",
   "src/app.ts",
   "src/server.ts",
   "src/cli.ts",
@@ -74,6 +77,10 @@ async function maybeReadJson<TValue>(absolutePath: string): Promise<TValue | und
 function inferEntrypointKind(candidatePath: string, command?: string): Entrypoint["kind"] {
   const normalized = candidatePath.toLowerCase();
   const loweredCommand = command?.toLowerCase() ?? "";
+
+  if (normalized.includes("entry-client") || normalized.includes("entry-server")) {
+    return "app";
+  }
 
   if (normalized.includes("page.tsx") || loweredCommand.includes("next ")) {
     return "app";
@@ -207,6 +214,7 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
   const warnings: string[] = [];
   const fileRoleByPath = new Map(scan.paths.map((entry) => [entry.path, entry.role] satisfies [string, StructurePath["role"]]));
   const manifestPaths = scan.detected.manifests.filter((manifest) => manifest.kind === "package-json");
+  const frameworkHints = new Set(scan.detected.framework_hints);
 
   for (const manifest of manifestPaths) {
     const packageJson = await maybeReadJson<PackageJson>(
@@ -302,8 +310,32 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
     }
   }
 
+  const frameworkSpecificEntrypoints = new Set<string>();
+
+  if (frameworkHints.has("vue")) {
+    for (const candidatePath of ["src/entry-client.ts", "src/entry-server.ts", "src/entry-base.ts"] as const) {
+      if (!knownFilePaths.has(candidatePath)) {
+        continue;
+      }
+
+      frameworkSpecificEntrypoints.add(candidatePath);
+      maybeAddEntrypoint(entrypoints, {
+        id: makeEntrypointId(candidatePath, inferEntrypointKind(candidatePath)),
+        path: candidatePath,
+        kind: inferEntrypointKind(candidatePath),
+        reason: "Matched a Vue application entry convention.",
+        confidence: candidatePath === "src/entry-base.ts" ? "medium" : "high",
+        evidence: ["vue"],
+      });
+    }
+  }
+
   for (const candidatePath of COMMON_ENTRYPOINTS) {
     if (!knownFilePaths.has(candidatePath)) {
+      continue;
+    }
+
+    if (frameworkSpecificEntrypoints.has(candidatePath)) {
       continue;
     }
 
@@ -427,13 +459,29 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
   }
 
   const fanInCounts = new Map<string, number>();
+  const EDGE_WEIGHTS: Partial<Record<GraphEdge["kind"], number>> = {
+    "import": 1,
+    "require": 1,
+    "reference": 1,
+    "route": 1,
+    "test-of": 0.5,
+    "config-link": 0.1,
+  };
 
   for (const edge of edges) {
-    fanInCounts.set(edge.to, (fanInCounts.get(edge.to) ?? 0) + 1);
+    const weight = EDGE_WEIGHTS[edge.kind] ?? 0;
+    if (weight === 0) {
+      continue;
+    }
+    fanInCounts.set(edge.to, (fanInCounts.get(edge.to) ?? 0) + weight);
   }
 
   for (const [targetPath, fanIn] of fanInCounts) {
     if (fanIn < 2) {
+      continue;
+    }
+
+    if (fileRoleByPath.get(targetPath) === "config") {
       continue;
     }
 
@@ -442,7 +490,7 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
       signal: "fan-in",
       reason: "Multiple files depend on this path, so it likely coordinates shared behavior.",
       confidence: fanIn >= 3 ? "high" : "medium",
-      evidence: [`fan_in:${fanIn}`],
+      evidence: [`fan_in:${fanIn.toFixed(2)}`],
     });
   }
 
@@ -487,6 +535,29 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
         evidence: [pathEntry.path],
       });
     }
+  }
+
+  for (const pathEntry of scan.paths) {
+    const baseName = path.posix.basename(pathEntry.path);
+    const shouldDefer =
+      pathEntry.path === ".github" ||
+      pathEntry.path.startsWith(".github/") ||
+      pathEntry.path === ".vscode" ||
+      pathEntry.path.startsWith(".vscode/") ||
+      baseName === "Dockerfile" ||
+      /^docker-.*\.(sh|bash)$/u.test(baseName) ||
+      baseName === ".editorconfig";
+
+    if (!shouldDefer || deferCandidates.some((candidate) => candidate.path === pathEntry.path)) {
+      continue;
+    }
+
+    deferCandidates.push({
+      path: pathEntry.path,
+      reason: "Infra, editor, or containerization files can usually be deferred during the first read.",
+      confidence: "medium",
+      evidence: [pathEntry.path],
+    });
   }
 
   const signals: SignalExtraction = {

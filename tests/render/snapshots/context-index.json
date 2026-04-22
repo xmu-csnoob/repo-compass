@@ -183,18 +183,6 @@
       ]
     },
     {
-      "path": "tsconfig.json",
-      "kind": "file",
-      "role": "core",
-      "summary": "Multiple files depend on this path, so it likely coordinates shared behavior.",
-      "priority": "medium",
-      "reason": "Multiple files depend on this path, so it likely coordinates shared behavior.",
-      "confidence": "medium",
-      "evidence": [
-        "fan_in:2"
-      ]
-    },
-    {
       "path": "README.md",
       "kind": "file",
       "role": "docs",

@@ -1,8 +1,9 @@
 # ONBOARDING
 
-## What This Repo Appears To Be
-- `node-cli` looks like a `tool` repository.
+## What Was Detected
+- Structural shape (coarse): `tool`.
 - Framework hints: node-cli
+- Phase 1 output is limited to static structural signals and conservative derived views.
 
 ## Read First
 - `package.json`: Start here to understand workspace shape, scripts, and dependencies.
