@@ -107,9 +107,9 @@ export function renderOnboarding(contextIndex: ContextIndex): string {
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
-export function renderAgentContext(contextIndex: ContextIndex): string {
+export function renderAgentStart(contextIndex: ContextIndex): string {
   const lines = [
-    "# Agent Context",
+    "# Agent Start",
     "",
     `Repo: ${contextIndex.repo.name}`,
     `Structural shape: ${contextIndex.repo.repo_shape}`,
