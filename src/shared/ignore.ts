@@ -96,7 +96,9 @@ function parseIgnoreRule(rawRule: string): Rule | null {
     : withoutRootAnchor;
 
   const basenameOnly = !normalizedSource.includes("/");
-  const normalizedPattern = normalizeRepoRelativePath(normalizedSource);
+  // Gitignore patterns use backslash for escaping (e.g. \# to match literal #),
+  // not as path separators. Don't normalize them through normalizeRepoRelativePath.
+  const normalizedPattern = normalizedSource;
 
   return {
     source: trimmed,

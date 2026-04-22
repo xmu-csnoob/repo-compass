@@ -100,6 +100,14 @@ function classifyPathRole(entry: WalkEntry): StructurePath["role"] {
   }
 
   if (
+    (entry.kind === "directory" && (
+      entry.repoRelativePath === "src" ||
+      entry.repoRelativePath === "app" ||
+      entry.repoRelativePath === "lib" ||
+      entry.repoRelativePath.endsWith("/src") ||
+      entry.repoRelativePath.endsWith("/app") ||
+      entry.repoRelativePath.endsWith("/lib")
+    )) ||
     entry.repoRelativePath.startsWith("src/") ||
     entry.repoRelativePath.startsWith("app/") ||
     entry.repoRelativePath.includes("/src/") ||
@@ -137,6 +145,7 @@ function detectFrameworkHints(entries: readonly WalkEntry[], packageJsonContent?
   const hints = new Set<string>();
   const allPaths = new Set(entries.map((entry) => entry.repoRelativePath));
   const packageText = packageJsonContent ?? "";
+  const hasVueFiles = entries.some((entry) => entry.repoRelativePath.endsWith(".vue"));
 
   if (allPaths.has("next.config.js") || allPaths.has("src/app/page.tsx") || /"next"\s*:/u.test(packageText)) {
     hints.add("nextjs");
@@ -152,6 +161,10 @@ function detectFrameworkHints(entries: readonly WalkEntry[], packageJsonContent?
 
   if (/react/u.test(packageText) || allPaths.has("src/App.tsx") || allPaths.has("src/main.tsx")) {
     hints.add("react");
+  }
+
+  if (/"vue"\s*:/u.test(packageText) || hasVueFiles || allPaths.has("src/app.vue")) {
+    hints.add("vue");
   }
 
   if (/express/u.test(packageText) || allPaths.has("src/app.ts")) {

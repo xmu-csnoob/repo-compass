@@ -71,7 +71,7 @@
         "id": "src",
         "path": "src",
         "kind": "directory",
-        "role": "unknown"
+        "role": "source"
       },
       {
         "id": "src/commands.ts",
@@ -148,15 +148,6 @@
       ]
     },
     {
-      "path": "tsconfig.json",
-      "why_now": "This path appears central to repo comprehension.",
-      "reason": "Multiple files depend on this path, so it likely coordinates shared behavior.",
-      "confidence": "medium",
-      "evidence": [
-        "fan_in:2"
-      ]
-    },
-    {
       "path": "README.md",
       "why_now": "This path appears central to repo comprehension.",
       "reason": "README is usually the shortest path to global project context.",
@@ -216,19 +207,7 @@
       ]
     }
   ],
-  "critical_paths": [
-    {
-      "name": "cli:src/index.ts",
-      "steps": [
-        "src/index.ts"
-      ],
-      "reason": "Shows the structural execution path from src/index.ts.",
-      "confidence": "high",
-      "evidence": [
-        "scripts.dev"
-      ]
-    }
-  ],
+  "critical_paths": [],
   "defer_for_now": [],
   "agent_hints": [
     {
@@ -260,11 +239,11 @@
     },
     {
       "kind": "safe-edit-zone",
-      "text": "Start edits near src/index.ts before touching generated or vendor paths.",
-      "reason": "Core source paths are safer than build, generated, or vendor outputs.",
-      "confidence": "medium",
+      "text": "Prefer edits under src before touching config, build, generated, or vendor paths.",
+      "reason": "Observed source paths are a safer first edit area than config, build, generated, or vendor outputs.",
+      "confidence": "high",
       "evidence": [
-        "src/index.ts"
+        "src"
       ]
     }
   ]

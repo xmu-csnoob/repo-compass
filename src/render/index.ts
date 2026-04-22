@@ -49,7 +49,9 @@ export function renderRepoMap(contextIndex: ContextIndex): string {
     ...contextIndex.entrypoints.map((item) => `- \`${item.path}\` (${item.kind})${formatConfidence(item.confidence)}: ${item.reason}`),
     "",
     "## Critical Paths",
-    ...contextIndex.critical_paths.map((item) => `- ${item.name}${formatConfidence(item.confidence)}: ${item.steps.join(" -> ")}`),
+    ...(contextIndex.critical_paths.length > 0
+      ? contextIndex.critical_paths.map((item) => `- ${item.name}${formatConfidence(item.confidence)}: ${item.steps.join(" -> ")}`)
+      : ["- No multi-hop structural path was inferred from the current static graph."]),
     "",
     "## Defer For Now",
     ...contextIndex.defer_for_now.map((item) => `- \`${item.path}\`${formatConfidence(item.confidence)}: ${item.reason}`),
@@ -89,7 +91,7 @@ export function renderOnboarding(contextIndex: ContextIndex): string {
     "## Safe Early Edit Zones",
     ...(safeEditHints.length > 0
       ? safeEditHints.map((hint) => `- ${hint.text}${formatConfidence(hint.confidence)}`)
-      : ["- No safe edit zone was inferred."]),
+      : ["- No source area was inferred with enough confidence for edit guidance."]),
     "",
     "## Defer For Now",
     ...contextIndex.defer_for_now.map((item) => `- \`${item.path}\`${formatConfidence(item.confidence)}: ${item.reason}`),

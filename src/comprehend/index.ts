@@ -83,23 +83,22 @@ export function buildComprehension(
   }
 
   const hints = scan.detected.framework_hints;
-  const isApp = hints.includes("nextjs") || hints.includes("react");
-  const isService = hints.includes("express");
-  const isTool = hints.includes("node-cli");
-  const isLibrary = hints.includes("library");
-  const appServiceCount = (isApp ? 1 : 0) + (isService ? 1 : 0) + (isTool ? 1 : 0);
+  const appSignals = ["nextjs", "react", "vite", "vue"];
+  const hasAppHint = appSignals.some((hint) => hints.includes(hint));
+  const hasServiceHint = hints.includes("express");
+  const hasToolHint = hints.includes("node-cli");
+  const hasLibraryHint = hints.includes("library");
+  const hasServerEntrypoint = signals.entrypoints.some((entrypoint) => entrypoint.kind === "server");
+  const hasCliEntrypoint = signals.entrypoints.some((entrypoint) => entrypoint.kind === "cli");
+  const hasLibraryEntrypoint = signals.entrypoints.some((entrypoint) => entrypoint.kind === "library");
+  const structuralShapes = [
+    hasAppHint ? "application" : null,
+    hasServiceHint && hasServerEntrypoint && !hasAppHint ? "service" : null,
+    hasToolHint && hasCliEntrypoint && !hasAppHint && !hasServiceHint ? "tool" : null,
+    hasLibraryHint && (hasLibraryEntrypoint || !hasCliEntrypoint) && !hasAppHint && !hasServiceHint ? "library" : null,
+  ].filter((shape): shape is RepoMetadata["repo_shape"] => shape !== null);
   const repoShape: RepoMetadata["repo_shape"] =
-    appServiceCount > 1
-      ? "mixed"
-      : isApp
-        ? "application"
-        : isService
-          ? "service"
-          : isTool
-            ? "tool"
-            : isLibrary
-              ? "library"
-              : "mixed";
+    structuralShapes.length === 1 ? structuralShapes[0] : "mixed";
 
   const keyPaths: KeyPath[] = [];
   const seenKeyPaths = new Set<string>();
@@ -186,7 +185,10 @@ export function buildComprehension(
     });
   }
 
-  for (const keyPath of keyPaths.slice(0, 5)) {
+  for (const keyPath of keyPaths
+    .filter((item) => item.role !== "config")
+    .filter((item) => allPathEntries.find((entry) => entry.path === item.path)?.role !== "config")
+    .slice(0, 5)) {
     addFirstRead({
       path: keyPath.path,
       why_now: keyPath.role === "entry" ? "This is likely the first runtime hop." : "This path appears central to repo comprehension.",
@@ -232,7 +234,7 @@ export function buildComprehension(
   }
   const uniqueEntrypoints = [...seenEntrypoints.values()];
 
-  const criticalPaths: CriticalPath[] = uniqueEntrypoints.map((entrypoint) => {
+  const criticalPaths: CriticalPath[] = uniqueEntrypoints.flatMap((entrypoint) => {
     // BFS up to 5 steps from the entrypoint
     const steps: string[] = [entrypoint.path];
     const visited = new Set<string>([entrypoint.path]);
@@ -251,13 +253,17 @@ export function buildComprehension(
       }
     }
 
-    return {
+    if (steps.length < 2) {
+      return [];
+    }
+
+    return [{
       name: `${entrypoint.kind}:${entrypoint.path}`,
       steps,
-      reason: `Shows the structural execution path from ${entrypoint.path}.`,
-      confidence: steps.length > 1 ? "medium" : entrypoint.confidence,
+      reason: `Shows a multi-hop structural path reachable from ${entrypoint.path}.`,
+      confidence: "medium",
       evidence: [...entrypoint.evidence],
-    };
+    }];
   });
 
   const deferForNow: DeferForNowItem[] = signals.defer_candidates.map((candidate) => ({
@@ -301,14 +307,19 @@ export function buildComprehension(
     }
   }
 
-  const safeEditPath = keyPaths.find((item) => item.role === "core" || item.role === "entry");
+  const sourceDirectory = allPathEntries.find(
+    (entry) => entry.kind === "directory" && entry.role === "source" && ["src", "app", "lib"].includes(entry.path),
+  );
+  const safeEditPath = sourceDirectory
+    ?? allPathEntries.find((entry) => entry.kind === "directory" && entry.role === "source")
+    ?? allPathEntries.find((entry) => entry.kind === "file" && entry.role === "source");
 
   if (safeEditPath !== undefined) {
     agentHints.push({
       kind: "safe-edit-zone" as const,
-      text: `Start edits near ${safeEditPath.path} before touching generated or vendor paths.`,
-      reason: "Core source paths are safer than build, generated, or vendor outputs.",
-      confidence: "medium" as const,
+      text: `Prefer edits under ${safeEditPath.path} before touching config, build, generated, or vendor paths.`,
+      reason: "Observed source paths are a safer first edit area than config, build, generated, or vendor outputs.",
+      confidence: safeEditPath.kind === "directory" ? "high" as const : "medium" as const,
       evidence: [safeEditPath.path],
     });
   }
@@ -319,7 +330,7 @@ export function buildComprehension(
       text: `Defer ${deferForNow[0]?.path ?? "generated outputs"} during the first pass.`,
       reason: "Generated, build, and vendor paths tend to distract from primary source logic.",
       confidence: "medium" as const,
-      evidence: [deferForNow[0].path],
+      evidence: [deferForNow[0]!.path],
     });
   }
 
