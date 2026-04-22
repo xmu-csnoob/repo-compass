@@ -446,3 +446,244 @@ Phase 1 is done only when all of the following are true:
 - Confidence and evidence rules match the whitepaper
 - Fixture tests and renderer snapshots pass
 - Performance baseline is measured against the declared Phase 1 SLOs
+
+---
+
+# Phase 2 Kanban
+
+## Delivery Milestones
+
+- `P2-M0`: Phase 2 contracts, Python scope, and startup contract are frozen
+- `P2-M1`: Python scan and extraction produce stable intermediate results
+- `P2-M2`: comprehension builder emits valid canonical metadata for Python repos
+- `P2-M3`: `agent-start.md` and markdown outputs are generated from canonical metadata
+- `P2-M4`: Python quality gates and end-to-end report pass
+- `P2-M5`: freshness path ships after quality gates
+
+## Backlog
+
+### Epic 0: Phase 2 Contract And Fixture Freeze
+
+Owner: `Codex` | Milestone: `P2-M0`
+
+- [x] `0.1` Freeze Phase 2 canonical schema extensions (merged to main)
+  - [x] Lock manifest kinds for Python support
+  - [x] Lock freshness fields and enum semantics
+  - [x] Lock additive compatibility rules against Phase 1
+- [ ] `0.2` Freeze Python scope and failure boundaries
+  - [ ] Lock Python in-scope manifests and layouts
+  - [ ] Lock Python out-of-scope cases for the first slice
+  - [ ] Lock Python P0 failure definition
+- [x] `0.3` Freeze `agent-start.md` contract (merged to main)
+  - [x] Lock required sections
+  - [x] Lock backing fields
+  - [x] Lock `<= 2000` token budget
+  - [x] Lock overflow trimming order
+- [ ] `0.4` Freeze verification targets
+  - [ ] Lock Python repo classes in the test matrix
+  - [ ] Lock end-to-end report requirements
+  - [ ] Lock phase gates for freshness sequencing
+
+### Epic 1: Python Repo Input And Structure Scan
+
+Owner: `Kimi` | Milestone: `P2-M1` | Review gate: `Codex`
+
+- [x] `1.1` Extend Stage A repo input for Phase 2 (merged to main)
+  - [x] Add `schema_version` `2.0`
+  - [x] Add `emit_agent_start`
+  - [x] Add `freshness_mode`
+  - [x] Preserve backward-compatible defaults where reasonable
+- [x] `1.2` Implement Python manifest detection (merged to main)
+  - [x] Detect `pyproject.toml`
+  - [x] Detect `setup.py`
+  - [x] Detect `setup.cfg`
+  - [x] Detect `requirements*.txt`
+- [x] `1.3` Extend path classification for Python repos (merged to main)
+  - [x] Recognize common Python source layouts
+  - [x] Classify test directories and files
+  - [x] Keep docs/config/build/generated separation consistent with Phase 1
+- [x] `1.4` Implement Python noise suppression rules (merged to main)
+  - [x] `.venv` and virtualenv directories
+  - [x] `__pycache__`
+  - [x] build/dist artifacts
+  - [x] migrations and low-signal glue paths
+- [x] `1.5` Build scan-level Python reproducibility metadata (merged to main)
+  - [x] Preserve included path summary
+  - [x] Preserve excluded path summary
+  - [x] Emit validated Phase 2 `scan.json`
+
+### Epic 2: Python Signal Extraction
+
+Owner: `Kimi` | Milestone: `P2-M1` | Review gate: `Codex`
+
+- [x] `2.1` Implement Python entrypoint detection (merged to main)
+  - [x] Detect `__main__.py`
+  - [x] Detect common CLI bootstrap paths
+  - [x] Detect common service startup files
+  - [x] Emit `reason`, `confidence`, and `evidence`
+- [x] `2.2` Extract Python commands and bootstrap actions (merged to main)
+  - [x] Parse runnable hints from manifests and common config
+  - [x] Normalize command source paths
+  - [x] Avoid inventing commands when signals are weak
+- [x] `2.3` Extend lightweight graph edges (merged to main)
+  - [x] Preserve existing Phase 1 edges
+  - [x] Add `module-link` for Python import/module relationships where cheap
+  - [x] Keep edge extraction deterministic and bounded
+- [x] `2.4` Compute Phase 2 priority candidates (merged to main)
+  - [x] Manifest-based candidates
+  - [x] Entrypoint-based candidates
+  - [x] Fan-in based candidates
+  - [x] Root-central candidates
+  - [x] Adjacent-test candidates
+- [x] `2.5` Compute Python defer candidates (merged to main)
+  - [x] virtualenv and cache paths
+  - [x] generated and build paths
+  - [x] migrations or low-signal operational directories
+- [x] `2.6` Emit validated Phase 2 `signals.json` (merged to main)
+  - [x] Warnings for unsupported or ambiguous Python repos
+  - [x] Stable ordering for deterministic output
+
+### Epic 3: Canonical Metadata Builder
+
+Owner: `Codex` | Milestone: `P2-M2`
+
+- [x] `3.1` Extend graph layer for Phase 2 (merged to main)
+  - [x] Preserve Phase 1 node and edge behavior
+  - [x] Add Python manifests into graph nodes
+  - [x] Preserve `module-link` edges
+- [x] `3.2` Extend top-level repo metadata (merged to main)
+  - [x] Primary languages for Python repos
+  - [x] Detected ecosystems for Python repos
+  - [x] Conservative framework hints for FastAPI, Flask, and Django
+- [x] `3.3` Derive Phase 2 views from the graph (merged to main)
+  - [x] `entrypoints`
+  - [x] `first_read_path`
+  - [x] `key_paths`
+  - [x] `critical_paths`
+  - [x] `defer_for_now`
+  - [x] `agent_hints`
+  - [x] `warnings`
+- [x] `3.4` Add freshness metadata container (merged to main)
+  - [x] `mode`
+  - [x] `status`
+  - [x] `generated_from`
+  - [x] `reason`
+- [x] `3.5` Enforce inference boundary (merged to main)
+  - [x] Facts do not carry invented summaries
+  - [x] Inferences always carry `reason` and `confidence`
+  - [x] Low-confidence Python guesses are omitted from startup guidance
+  - [x] `degraded` freshness does not overstate trust
+- [x] `3.6` Emit validated Phase 2 `context-index.json` (merged to main)
+  - [x] Deterministic field ordering
+  - [x] Deterministic item ordering
+  - [x] Stable serialization for snapshots
+
+### Epic 4: Startup And Human-Facing Renderers
+
+Owner: `Kimi` | Milestone: `P2-M3` | Review gate: `Codex`
+
+- [x] `4.1` Update `repo.map.md` renderer for Phase 2 (merged to main)
+  - [x] Render Python-oriented repo snapshot
+  - [x] Render freshness state when present
+  - [x] Preserve no-new-claims rule
+- [x] `4.2` Update `ONBOARDING.md` renderer for Phase 2 (merged to main)
+  - [x] Render Python-oriented run and test hints
+  - [x] Render warnings when signals are incomplete
+  - [x] Preserve no-new-claims rule
+- [x] `4.3` Implement `agent-start.md` renderer (merged to main)
+  - [x] Render required sections in fixed order
+  - [x] Render from canonical metadata only
+  - [x] Enforce token budget
+- [x] `4.4` Implement `agent-start.md` overflow trimming (merged to main)
+  - [x] Implement section-aware budget measurement
+  - [x] Implement overflow trimming order exactly as specified
+  - [x] Preserve warnings while trimming lower-priority sections
+  - [x] Keep trimming logic isolated enough for direct tests
+- [x] `4.5` Integrate output writing (merged to main)
+  - [x] `repo.map.md`
+  - [x] `ONBOARDING.md`
+  - [x] `agent-start.md`
+
+### Epic 5: CLI And Pipeline Integration
+
+Owner: `Codex` | Milestone: `P2-M3`
+
+- [x] `5.1` Update CLI for Phase 2 output path (merged to main)
+  - [x] Add `agent-start.md` emission path
+  - [x] Preserve debug artifact flow
+  - [x] Preserve deterministic overwrite behavior
+- [x] `5.2` Integrate Phase 2 pipeline defaults (merged to main)
+  - [x] Default startup artifact emission behavior
+  - [x] Backward-compatible handling of legacy options where practical
+  - [x] Stable run layout under `work/runs/<run-id>/`
+- [x] `5.3` Add CLI-facing freshness mode wiring (merged to main)
+  - [x] Parse `off|watch|ci`
+  - [x] Keep freshness off by default until implementation is ready
+  - [x] Expose freshness metadata without faking freshness support
+
+### Epic 6: Test Matrix And Quality Gates
+
+Owner: `Minimax` + `Codex` | Milestone: `P2-M4`
+
+- [x] `6.1` Build Python fixture suite (merged to main)
+  - [x] Python CLI fixture
+  - [x] Python library fixture
+  - [x] Python web/service fixture (FastAPI / Flask / Django)
+  - [x] Noisy Python fixture
+  - [x] Mixed Python + JS/TS fixture
+- [ ] `6.2` Add contract and compatibility tests
+  - [ ] Schema validation for new fields
+  - [ ] Freshness enum coverage including `degraded`
+  - [ ] Additive compatibility checks against Phase 1
+- [ ] `6.3` Add comprehension and ranking tests
+  - [ ] Entry point credibility tests
+  - [ ] Key-path anti-noise tests
+  - [ ] First-read-path justification tests
+  - [ ] Warning generation tests
+- [ ] `6.4` Add renderer and startup contract tests
+  - [ ] `agent-start.md` snapshots
+  - [ ] Overflow trimming order tests
+  - [ ] Freshness rendering tests
+- [ ] `6.5` Produce Phase 2 end-to-end report
+  - [ ] Create `phase2-python-end2end-test-report.md`
+  - [ ] Evaluate false positives and false negatives
+  - [ ] Evaluate noise suppression
+  - [ ] Record ship/no-ship recommendation
+
+### Epic 7: Freshness System
+
+Owner: `Kimi` | Milestone: `P2-M5` | Review gate: `Codex`
+
+- [ ] `7.1` Implement freshness state model
+  - [ ] `fresh`
+  - [ ] `stale`
+  - [ ] `degraded`
+  - [ ] `unknown`
+- [ ] `7.2` Implement watch-mode regeneration
+  - [ ] change detection
+  - [ ] canonical rebuild trigger
+  - [ ] degraded-state fallback when equivalence is not proven
+- [ ] `7.3` Implement CI regeneration path
+  - [ ] explicit CI mode
+  - [ ] canonical rebuild path
+  - [ ] freshness metadata emission
+- [ ] `7.4` Add freshness verification
+  - [ ] watch-mode tests
+  - [ ] CI-mode tests
+  - [ ] incremental-versus-full trust signaling tests
+
+## Critical Path (Phase 2)
+
+- `0.1` -> `0.2` -> `1.2` -> `1.3` -> `1.4` -> `2.1` -> `2.4` -> `2.5` -> `3.1` -> `3.2` -> `3.3` -> `6.2` -> `6.3` -> `6.5`
+
+## Definition Of Done
+
+Phase 2 is done only when all of the following are true:
+
+- Python support works credibly for the scoped repository classes
+- `context-index.json` remains canonical and additive versus Phase 1 where intended
+- `agent-start.md` is generated from canonical metadata and obeys the fixed budget rules
+- startup overflow behavior matches the documented trimming order
+- Python P0 failures do not exceed the severity of the major Phase 1 Vue miss
+- `phase2-python-end2end-test-report.md` recommends ship for the scoped repo classes
+- freshness ships only after Python quality and startup artifact gates pass

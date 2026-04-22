@@ -31,7 +31,8 @@ function printHelp(): void {
       "  --include <path>      Restrict analysis to a repo-relative subtree.",
       "  --exclude <path>      Add an explicit exclude rule.",
       "  --debug               Emit intermediate debug artifacts.",
-      "  --agent-start         Emit the startup markdown artifact.",
+      "  --no-agent-start      Disable the startup markdown artifact. (default: enabled)",
+      "  --agent-start         Override to enable the startup markdown artifact.",
       "  --agent-views         Legacy alias for --agent-start.",
       "  --freshness-mode      Declare freshness mode metadata: off, watch, or ci.",
       "  --help                Show this message.",
@@ -60,7 +61,7 @@ function parseArgs(argv: readonly string[]): CliOptions {
   const exclude: string[] = [];
   let outputRoot: string | undefined;
   let debug = false;
-  let emitAgentStart = false;
+  let emitAgentStart = true;
   let freshnessMode: "off" | "watch" | "ci" = "off";
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -85,8 +86,8 @@ function parseArgs(argv: readonly string[]): CliOptions {
       continue;
     }
 
-    if (token === "--agent-start") {
-      emitAgentStart = true;
+    if (token === "--agent-start" || token === "--no-agent-start") {
+      emitAgentStart = token === "--agent-start";
       continue;
     }
 
