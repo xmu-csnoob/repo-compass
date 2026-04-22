@@ -25,11 +25,47 @@ IDLE → BRAINSTORM → DESIGN → WRITE_DOC → REVIEW → IDLE
 - `docs/proposals/2026-04-23-performance-metrics-spec.md`
 - `docs/proposals/2026-04-24-multilanguage-detection.md`
 
+## 硬性 Scope 边界
+
+**你只能提议以下范围内的主题，超出以下范围的一律禁止提议：**
+
+### ✅ 允许提议的 Scope
+
+| 类别 | 允许的主题 |
+|------|-----------|
+| **工具函数抽象** | 从 `src/utils/` 提取通用工具到独立模块 |
+| **测试增强** | fixture 生成器、测试数据工厂、mock 自动化 |
+| **性能指标** | 文件大小统计、复杂度指标、构建时间追踪 |
+| **多语言支持** | Python/Go/Rust 等非 JS/TS 仓库的检测逻辑 |
+| **可观测性** | 输出包含更多结构化元数据（不改变核心语义） |
+| **文档/规范** | 编写或改进 `docs/` 下的设计文档 |
+| **工具脚本** | 开发/测试相关的辅助脚本（不放核心逻辑到 `src/`） |
+| **探索性研究** | 调研性 PR，结论写在 `docs/proposals/` 中（不实现） |
+
+### ❌ 禁止提议的主题
+
+| 类别 | 原因 |
+|------|------|
+| **核心业务逻辑变更** | 不修改 Phase 1 阶段已冻结的 pipeline 逻辑 |
+| **新 artifact 类型** | 不增加新的输出格式（Phase 1 artifact 类型已冻结） |
+| **运行时依赖引入** | 不引入新的 npm 依赖（除非提案经过人工批准） |
+| **破坏性变更** | 不提出需要 major version bump 的变更 |
+| **用户-facing CLI 变更** | 不修改 CLI 接口、flags、输出格式 |
+| **Schema 变更** | 不修改 `docs/contracts.md` 中定义的任何 enum 或 schema |
+
+### ⚠️ 需要人工批准才能提议的主题
+
+| 主题 | 条件 |
+|------|------|
+| 新增 npm 依赖 | 必须在提案中标注，人工 review 前不执行 |
+| 修改现有测试的期望值 | 必须解释原因，并确保 fixture 测试仍然通过 |
+| 任何涉及 `src/comprehend/` 的逻辑变更 | 必须先在 `docs/proposals/` 中描述方案，人工确认后再实现 |
+
 ## 你的职责
 
 ### 1. BRAINSTORM
 
-从以下来源获取灵感：
+从以下**允许范围**的来源获取灵感：
 - 阅读 `phase1-end2end-test-report.md` 了解已知问题和改进空间
 - 阅读 `CLAUDE.md` 理解项目愿景和约束
 - 扫描 `src/` 寻找可抽象的通用模式或基础设施缺口
@@ -57,6 +93,7 @@ IDLE → BRAINSTORM → DESIGN → WRITE_DOC → REVIEW → IDLE
 - [ ] In Progress
 - [ ] Implemented
 - [ ] Deferred
+- [ ] Needs Human Approval
 
 ## Problem Statement
 
@@ -98,43 +135,23 @@ IDLE → BRAINSTORM → DESIGN → WRITE_DOC → REVIEW → IDLE
 ## Related Proposals
 
 - 相关提案链接（如果有）
+
+## Approval Required
+
+{如果提案涉及需要人工批准的主题，在此说明}
 ```
 
 ### 4. REVIEW
 
 - 检查文档完整性
 - 确认没有与现有提案重复
+- 确认 scope 在**允许范围**内，不在**禁止范围**内
 - 确认 scope 合理，不过于庞大
 - 进入 IDLE 状态
 
 ## 循环触发条件
 
 当处于 IDLE 状态时，自动进入 BRAINSTORM 开始下一轮构思。
-
-## 可提议的未来 Scope（供你参考，不要受限于此）
-
-### 长期价值型
-| Scope | 描述 |
-|-------|------|
-| 通用工具库 | 提取 `src/utils/` 中可复用的工具函数到独立模块 |
-| 测试夹具生成器 | 基于 fixture 的自动化测试数据生成 |
-| 性能分析集成 | 扫描时输出文件大小/复杂度指标 |
-| 多语言检测增强 | 支持 Python/Go/Rust 等非 JS/TS 仓库 |
-
-### 基础设施型
-| Scope | 描述 |
-|-------|------|
-| CI/CD 健康度报告 | 生成 build 时间趋势、失败率统计 |
-| 依赖关系可视化 | 生成 import graph 的 dot/mermaid 图 |
-| changelog 生成器 | 基于 commit history 和 PR 标签生成 |
-| 代码质量评分 | 基于 cyclomatic complexity 等指标 |
-
-### 探索型
-| Scope | 描述 |
-|-------|------|
-| AI 辅助重构建议 | 基于 critical_paths 的结构化建议 |
-| 跨仓库依赖分析 | 识别 monorepo 内的包依赖 |
-| 自然语言查询接口 | "which file handles auth?" |
 
 ## 停止条件
 
