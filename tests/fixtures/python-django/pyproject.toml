@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-django"
+version = "0.1.0"
+description = "A sample Django project for fixture testing"
+requires-python = ">=3.9"
+dependencies = ["django>=5.0.0"]

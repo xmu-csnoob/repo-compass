@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-fastapi"
+version = "0.1.0"
+description = "A sample FastAPI service for fixture testing"
+requires-python = ">=3.9"
+dependencies = ["fastapi>=0.100.0", "uvicorn>=0.23.0"]

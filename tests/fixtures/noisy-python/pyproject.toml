@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "noisy-python"
+version = "0.1.0"
+description = "A noisy Python repo with heavy artifact pollution"
+requires-python = ">=3.9"
+dependencies = ["requests>=2.28.0"]
