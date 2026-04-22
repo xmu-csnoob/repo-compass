@@ -39,9 +39,9 @@ describe("CLI pipeline", () => {
 
   it("emits the static agent view only when requested", async () => {
     const repoRoot = await makeFixtureCopy("node-cli");
-    const result = await runPipeline([repoRoot, "--agent-views"]);
+    const result = await runPipeline([repoRoot, "--agent-start"]);
     const runRoot = path.join(repoRoot, "work", "runs", result.runId);
 
-    await expect(readFile(path.join(runRoot, "outputs", "agent-context.md"), "utf8")).resolves.toContain("# Agent Context");
+    await expect(readFile(path.join(runRoot, "outputs", "agent-start.md"), "utf8")).resolves.toContain("# Agent Start");
   });
 });

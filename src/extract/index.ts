@@ -55,6 +55,19 @@ const COMMON_ENTRYPOINTS = [
   "src/app/api/hello/route.ts",
 ] as const;
 
+const PYTHON_COMMON_ENTRYPOINTS = [
+  "src/__main__.py",
+  "src/main.py",
+  "src/app.py",
+  "src/cli.py",
+  "src/server.py",
+  "app.py",
+  "main.py",
+  "manage.py",
+  "wsgi.py",
+  "asgi.py",
+] as const;
+
 function makeEntrypointId(pathValue: string, kind: Entrypoint["kind"]): string {
   return `${kind}:${pathValue}`;
 }
@@ -97,6 +110,32 @@ function inferEntrypointKind(candidatePath: string, command?: string): Entrypoin
   return "app";
 }
 
+function inferPythonEntrypointKind(candidatePath: string, frameworkHints: Set<string>): Entrypoint["kind"] {
+  const normalized = candidatePath.toLowerCase();
+
+  if (normalized.includes("manage.py") || normalized.includes("wsgi.py") || normalized.includes("asgi.py")) {
+    return "server";
+  }
+
+  if (normalized.includes("__main__.py") || normalized.includes("cli.py")) {
+    return "cli";
+  }
+
+  if (normalized.includes("app.py") && (frameworkHints.has("fastapi") || frameworkHints.has("flask"))) {
+    return "server";
+  }
+
+  if (normalized.includes("test_") || normalized.includes("_test.py")) {
+    return "test-harness";
+  }
+
+  if (normalized.includes("__init__.py") || normalized.includes("src/") || normalized.includes("lib/")) {
+    return "library";
+  }
+
+  return "app";
+}
+
 function resolveRelativeImport(
   importerPath: string,
   specifier: string,
@@ -115,6 +154,53 @@ function resolveRelativeImport(
   ];
 
   return directCandidates.find((candidate) => knownFilePaths.has(candidate));
+}
+
+function resolvePythonModule(
+  importerPath: string,
+  module: string,
+  knownFilePaths: ReadonlySet<string>,
+): string | undefined {
+  if (module.startsWith(".")) {
+    // Relative import
+    const importerDir = path.posix.dirname(importerPath);
+    const parts = module.split(".");
+    let currentDir = importerDir;
+
+    // Handle leading dots
+    let dotCount = 0;
+    for (const part of parts) {
+      if (part === "") {
+        dotCount++;
+        currentDir = path.posix.dirname(currentDir);
+      } else {
+        break;
+      }
+    }
+
+    const moduleParts = parts.filter((p) => p !== "");
+    const modulePath = path.posix.join(currentDir, ...moduleParts);
+
+    const candidates = [
+      `${modulePath}.py`,
+      path.posix.join(modulePath, "__init__.py"),
+    ];
+
+    return candidates.find((candidate) => knownFilePaths.has(candidate));
+  }
+
+  // Absolute import - try to find in known paths
+  const parts = module.split(".");
+  const modulePath = parts.join("/");
+
+  const candidates = [
+    `${modulePath}.py`,
+    path.posix.join(modulePath, "__init__.py"),
+    `src/${modulePath}.py`,
+    path.posix.join("src", modulePath, "__init__.py"),
+  ];
+
+  return candidates.find((candidate) => knownFilePaths.has(candidate));
 }
 
 function normalizeCandidatePath(candidatePath: string): string {
@@ -146,6 +232,54 @@ function extractRelativeImports(fileContent: string): ExtractedImport[] {
   }
 
   return [...imports.entries()].map(([specifier, kind]) => ({ specifier, kind }));
+}
+
+type PythonImport = {
+  readonly module: string;
+  readonly names: string[] | undefined;
+  readonly isRelative: boolean;
+};
+
+function extractPythonImports(fileContent: string): PythonImport[] {
+  const imports: PythonImport[] = [];
+
+  // import x.y.z
+  const importPattern = /^import\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)/gmu;
+  for (const match of fileContent.matchAll(importPattern)) {
+    const module = match[1];
+    if (module !== undefined) {
+      imports.push({ module, names: undefined, isRelative: false });
+    }
+  }
+
+  // from x.y import z, w
+  const fromPattern = /^from\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\s+import\s+(.+)$/gmu;
+  for (const match of fileContent.matchAll(fromPattern)) {
+    const module = match[1];
+    const namesStr = match[2];
+    if (module !== undefined) {
+      const isRelative = module.startsWith(".");
+      const names = namesStr
+        ? namesStr.split(",").map((s) => s.trim()).filter((s) => s !== "" && s !== "*")
+        : undefined;
+      imports.push({ module, names, isRelative });
+    }
+  }
+
+  // from . import x (relative import)
+  const relativePattern = /^from\s+(\.+)(?:[a-zA-Z_][a-zA-Z0-9_]*)*\s+import\s+(.+)$/gmu;
+  for (const match of fileContent.matchAll(relativePattern)) {
+    const dots = match[1];
+    const namesStr = match[2];
+    if (dots !== undefined) {
+      const names = namesStr
+        ? namesStr.split(",").map((s) => s.trim()).filter((s) => s !== "" && s !== "*")
+        : undefined;
+      imports.push({ module: dots, names, isRelative: true });
+    }
+  }
+
+  return imports;
 }
 
 function commandToPath(command: string, knownFilePaths: ReadonlySet<string>): string | undefined {
@@ -355,6 +489,32 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
     });
   }
 
+  // Python entrypoint detection
+  const pythonFrameworkHints = new Set(
+    [...frameworkHints].filter((h) => h.startsWith("python-") || ["fastapi", "flask", "django", "pytest"].includes(h))
+  );
+
+  for (const candidatePath of PYTHON_COMMON_ENTRYPOINTS) {
+    if (!knownFilePaths.has(candidatePath)) {
+      continue;
+    }
+
+    const kind = inferPythonEntrypointKind(candidatePath, pythonFrameworkHints);
+    const confidence: Entrypoint["confidence"] =
+      candidatePath === "manage.py" || candidatePath === "src/__main__.py"
+        ? "high"
+        : "medium";
+
+    maybeAddEntrypoint(entrypoints, {
+      id: makeEntrypointId(candidatePath, kind),
+      path: candidatePath,
+      kind,
+      reason: "Matched a common Python repo entrypoint convention.",
+      confidence,
+      evidence: [candidatePath],
+    });
+  }
+
   for (const filePath of knownFilePaths) {
     const fileRole = fileRoleByPath.get(filePath);
 
@@ -364,24 +524,41 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
 
     const absolutePath = resolveRepoRelativePath(scan.repo.root, filePath);
     const fileContent = await readFile(absolutePath, "utf8");
-    const imports = extractRelativeImports(fileContent);
 
-    for (const extractedImport of imports) {
-      const resolvedImportPath = resolveRelativeImport(
-        filePath,
-        extractedImport.specifier,
-        knownFilePaths,
-      );
-
-      if (resolvedImportPath === undefined) {
-        continue;
+    if (filePath.endsWith(".py") || filePath.endsWith(".pyi")) {
+      // Python import extraction
+      const pythonImports = extractPythonImports(fileContent);
+      for (const pyImport of pythonImports) {
+        const resolvedModule = resolvePythonModule(filePath, pyImport.module, knownFilePaths);
+        if (resolvedModule !== undefined) {
+          edges.push({
+            from: filePath,
+            to: resolvedModule,
+            kind: "module-link",
+          });
+        }
       }
+    } else {
+      // JS/TS import extraction
+      const imports = extractRelativeImports(fileContent);
 
-      edges.push({
-        from: filePath,
-        to: resolvedImportPath,
-        kind: extractedImport.kind,
-      });
+      for (const extractedImport of imports) {
+        const resolvedImportPath = resolveRelativeImport(
+          filePath,
+          extractedImport.specifier,
+          knownFilePaths,
+        );
+
+        if (resolvedImportPath === undefined) {
+          continue;
+        }
+
+        edges.push({
+          from: filePath,
+          to: resolvedImportPath,
+          kind: extractedImport.kind,
+        });
+      }
     }
   }
 
@@ -524,6 +701,37 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
         evidence: ["express"],
       });
     }
+
+    // Python framework-specific priority candidates
+    if (frameworkHint === "fastapi" && knownFilePaths.has("src/main.py")) {
+      maybeAddPriorityCandidate(priorityCandidates, {
+        path: "src/main.py",
+        signal: "workflow-core",
+        reason: "FastAPI services commonly bootstrap the ASGI application here.",
+        confidence: "high",
+        evidence: ["fastapi"],
+      });
+    }
+
+    if (frameworkHint === "flask" && knownFilePaths.has("app.py")) {
+      maybeAddPriorityCandidate(priorityCandidates, {
+        path: "app.py",
+        signal: "workflow-core",
+        reason: "Flask applications commonly define the WSGI application here.",
+        confidence: "high",
+        evidence: ["flask"],
+      });
+    }
+
+    if (frameworkHint === "django" && knownFilePaths.has("manage.py")) {
+      maybeAddPriorityCandidate(priorityCandidates, {
+        path: "manage.py",
+        signal: "workflow-core",
+        reason: "Django management commands and server bootstrap are defined here.",
+        confidence: "high",
+        evidence: ["django"],
+      });
+    }
   }
 
   for (const pathEntry of scan.paths) {
@@ -556,6 +764,42 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
       path: pathEntry.path,
       reason: "Infra, editor, or containerization files can usually be deferred during the first read.",
       confidence: "medium",
+      evidence: [pathEntry.path],
+    });
+  }
+
+  // Python manifest priority candidates
+  for (const manifest of scan.detected.manifests) {
+    if (["pyproject", "setup-py", "setup-cfg", "requirements"].includes(manifest.kind)) {
+      maybeAddPriorityCandidate(priorityCandidates, {
+        path: manifest.path,
+        signal: "manifest",
+        reason: `Python manifest (${manifest.kind}) defines the primary workspace metadata.`,
+        confidence: "high",
+        evidence: [manifest.kind],
+      });
+    }
+  }
+
+  // Python-specific defer candidates
+  for (const pathEntry of scan.paths) {
+    const baseName = path.posix.basename(pathEntry.path);
+    const shouldDeferPython =
+      baseName === "__pycache__" ||
+      pathEntry.path.startsWith("__pycache__/") ||
+      baseName.endsWith(".pyc") ||
+      baseName.endsWith(".pyo") ||
+      baseName.endsWith(".egg-info") ||
+      pathEntry.path.includes(".egg-info/");
+
+    if (!shouldDeferPython || deferCandidates.some((candidate) => candidate.path === pathEntry.path)) {
+      continue;
+    }
+
+    deferCandidates.push({
+      path: pathEntry.path,
+      reason: "Python build artifacts and cache files can usually be deferred during the first read.",
+      confidence: "high",
       evidence: [pathEntry.path],
     });
   }

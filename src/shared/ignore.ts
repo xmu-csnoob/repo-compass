@@ -12,6 +12,16 @@ const DEFAULT_IGNORE_RULES = [
   "coverage/",
   "work/",
   "work/runs/",
+  "__pycache__/",
+  ".venv/",
+  "venv/",
+  "env/",
+  ".env/",
+  ".pytest_cache/",
+  ".mypy_cache/",
+  "*.egg-info/",
+  ".tox/",
+  "build/",
 ] as const;
 
 type Rule = {
