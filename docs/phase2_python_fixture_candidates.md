@@ -158,8 +158,7 @@ python-flask-repo/
 
 ### Anti-Noise Notes
 
-- `templates/` should be treated as first-class application source for Flask repos
-- `static/` should not be blanket-classified as generated noise; it is often app-owned source in Flask repos
+- `templates/` and `static/` should be classified as `generated` or `unknown` role, not `source`
 - Do NOT mistake `app.py` for a CLI entrypoint
 
 ---
@@ -196,7 +195,7 @@ python-django-repo/
 |--------|-------------|-------------|
 | `manage.py` | root | Django project signal (P0) |
 | `settings.py` | project package | Django configuration |
-| `path()` / `re_path()` / `urlpatterns` | `urls.py` | URL routing candidate |
+| `@app.route` / `path()` | urls.py | URL routing candidate |
 | `apps/` or `<appname>/` layout | root | Django app pattern |
 
 ### Anti-Noise Notes
