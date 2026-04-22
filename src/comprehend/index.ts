@@ -98,7 +98,7 @@ export function buildComprehension(
     hasLibraryHint && (hasLibraryEntrypoint || !hasCliEntrypoint) && !hasAppHint && !hasServiceHint ? "library" : null,
   ].filter((shape): shape is RepoMetadata["repo_shape"] => shape !== null);
   const repoShape: RepoMetadata["repo_shape"] =
-    structuralShapes.length === 1 ? structuralShapes[0] : "mixed";
+    structuralShapes.length === 1 ? (structuralShapes[0] ?? "mixed") : "mixed";
 
   const keyPaths: KeyPath[] = [];
   const seenKeyPaths = new Set<string>();
@@ -233,8 +233,15 @@ export function buildComprehension(
     }
   }
   const uniqueEntrypoints = [...seenEntrypoints.values()];
+  const criticalKindPriority = ["app", "server", "cli", "library", "build", "test-harness"] as const;
+  const selectedCriticalKind = criticalKindPriority.find((kind) =>
+    uniqueEntrypoints.some((entrypoint) => entrypoint.kind === kind),
+  );
+  const criticalEntrypoints = selectedCriticalKind === undefined
+    ? uniqueEntrypoints
+    : uniqueEntrypoints.filter((entrypoint) => entrypoint.kind === selectedCriticalKind);
 
-  const criticalPaths: CriticalPath[] = uniqueEntrypoints.flatMap((entrypoint) => {
+  const criticalPaths: CriticalPath[] = criticalEntrypoints.flatMap((entrypoint) => {
     // BFS up to 5 steps from the entrypoint
     const steps: string[] = [entrypoint.path];
     const visited = new Set<string>([entrypoint.path]);

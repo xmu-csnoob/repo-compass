@@ -2,7 +2,7 @@
 
 ## Repo Snapshot
 - Name: `node-cli`
-- Shape: `tool`
+- Structural shape (coarse): `tool`
 - Languages: JSON, Markdown, TypeScript
 - Framework hints: node-cli
 
@@ -14,7 +14,6 @@
 ## Key Paths
 - `src/index.ts` (entry): Likely runtime entrypoint.
 - `package.json` (config): Package manifest defines the primary Node workspace metadata.
-- `tsconfig.json` (core) [medium]: Multiple files depend on this path, so it likely coordinates shared behavior.
 - `README.md` (docs) [medium]: Repository overview and contributor-facing orientation.
 
 ## Entrypoints

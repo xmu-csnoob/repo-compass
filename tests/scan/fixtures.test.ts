@@ -84,6 +84,12 @@ describe("scan assertions (7.3)", () => {
     expect(scan.detected.manifests.some((m) => m.kind === "package-json")).toBe(true);
   });
 
+  it("nextjs-app: does not emit noisy library hint when app hints exist", async () => {
+    const { scan } = await runFullPipeline("nextjs-app");
+
+    expect(scan.detected.framework_hints).not.toContain("library");
+  });
+
   it("vue-app: detects vue framework hint", async () => {
     const { scan } = await runFullPipeline("vue-app");
 
@@ -156,6 +162,13 @@ describe("comprehension assertions (7.3)", () => {
     // but we should not produce a single-step path
     const singleStep = comprehension.critical_paths.filter((cp) => cp.steps.length < 2);
     expect(singleStep).toHaveLength(0);
+  });
+
+  it("vue-app: critical_paths prefers app entrypoints over cli wrappers", async () => {
+    const { comprehension } = await runFullPipeline("vue-app");
+
+    expect(comprehension.critical_paths.length).toBeGreaterThan(0);
+    expect(comprehension.critical_paths.every((cp) => cp.name.startsWith("app:"))).toBe(true);
   });
 });
 

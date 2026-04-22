@@ -191,4 +191,66 @@ describe("extractSignals", () => {
       ),
     ).toBe(true);
   });
+
+  it("adds Vue entry conventions as entrypoints when Vue signals are present", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "repo-compass-vue-entry-"));
+    temporaryDirectories.push(repoRoot);
+
+    await mkdir(path.join(repoRoot, "src"), { recursive: true });
+    await writeFile(
+      path.join(repoRoot, "package.json"),
+      JSON.stringify({
+        name: "vue-entry-fixture",
+        version: "1.0.0",
+        dependencies: {
+          vue: "^3.0.0",
+        },
+      }),
+      "utf8",
+    );
+    await writeFile(path.join(repoRoot, "src", "app.vue"), "<template><div/></template>\n", "utf8");
+    await writeFile(path.join(repoRoot, "src", "entry-client.ts"), "export const client = true;\n", "utf8");
+    await writeFile(path.join(repoRoot, "src", "entry-server.ts"), "export const server = true;\n", "utf8");
+
+    const input = normalizeRepoInput({
+      schema_version: "1.0",
+      run_id: "run-extract-vue-entry",
+      repo_root: repoRoot,
+      output_root: repoRoot,
+    });
+    const scan = await scanRepository(input);
+    const signals = await extractSignals(scan);
+
+    expect(signals.entrypoints.some((entrypoint) => entrypoint.path === "src/entry-client.ts")).toBe(true);
+    expect(signals.entrypoints.some((entrypoint) => entrypoint.path === "src/entry-server.ts")).toBe(true);
+  });
+
+  it("marks infra and editor paths as defer candidates", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "repo-compass-defer-infra-"));
+    temporaryDirectories.push(repoRoot);
+
+    await mkdir(path.join(repoRoot, ".vscode"), { recursive: true });
+    await mkdir(path.join(repoRoot, ".github", "workflows"), { recursive: true });
+    await mkdir(path.join(repoRoot, "src"), { recursive: true });
+    await writeFile(path.join(repoRoot, "package.json"), JSON.stringify({ name: "defer-fixture", version: "1.0.0" }), "utf8");
+    await writeFile(path.join(repoRoot, "src", "index.ts"), "export const ok = true;\n", "utf8");
+    await writeFile(path.join(repoRoot, ".vscode", "settings.json"), "{}\n", "utf8");
+    await writeFile(path.join(repoRoot, ".github", "workflows", "ci.yml"), "name: ci\n", "utf8");
+    await writeFile(path.join(repoRoot, "Dockerfile"), "FROM node:20\n", "utf8");
+    await writeFile(path.join(repoRoot, "docker-build.sh"), "#!/bin/sh\n", "utf8");
+
+    const input = normalizeRepoInput({
+      schema_version: "1.0",
+      run_id: "run-extract-defer-infra",
+      repo_root: repoRoot,
+      output_root: repoRoot,
+    });
+    const scan = await scanRepository(input);
+    const signals = await extractSignals(scan);
+
+    expect(signals.defer_candidates.some((item) => item.path === ".vscode")).toBe(true);
+    expect(signals.defer_candidates.some((item) => item.path === ".github")).toBe(true);
+    expect(signals.defer_candidates.some((item) => item.path === "Dockerfile")).toBe(true);
+    expect(signals.defer_candidates.some((item) => item.path === "docker-build.sh")).toBe(true);
+  });
 });
