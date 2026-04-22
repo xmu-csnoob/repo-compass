@@ -451,6 +451,15 @@ Phase 1 is done only when all of the following are true:
 
 # Phase 2 Kanban
 
+## Current Status
+
+- As of `2026-04-22`, local `main` is synced with `origin/main` at `aff866a`.
+- Local uncommitted work is focused on Python-specific `agent_hints` generation in `src/comprehend/index.ts`.
+- Current local additions cover setup hints, Python run hints, and Python test hints for onboarding-oriented guidance.
+- Contract and planning docs now cover the frozen Python scope, verification matrix, startup contract, and freshness sequencing rules.
+- Contract compatibility checks, first-read-path justification coverage, warning propagation coverage, overflow trimming tests, and the Phase 2 end-to-end report are now in place.
+- Freshness metadata is scaffolded in contracts and renderers, but runtime freshness behavior is not implemented yet; the emitted status is still effectively `unknown`.
+
 ## Delivery Milestones
 
 - `P2-M0`: Phase 2 contracts, Python scope, and startup contract are frozen
@@ -470,19 +479,19 @@ Owner: `Codex` | Milestone: `P2-M0`
   - [x] Lock manifest kinds for Python support
   - [x] Lock freshness fields and enum semantics
   - [x] Lock additive compatibility rules against Phase 1
-- [ ] `0.2` Freeze Python scope and failure boundaries
-  - [ ] Lock Python in-scope manifests and layouts
-  - [ ] Lock Python out-of-scope cases for the first slice
-  - [ ] Lock Python P0 failure definition
+- [x] `0.2` Freeze Python scope and failure boundaries (documented in Phase 2 specs)
+  - [x] Lock Python in-scope manifests and layouts
+  - [x] Lock Python out-of-scope cases for the first slice
+  - [x] Lock Python P0 failure definition
 - [x] `0.3` Freeze `agent-start.md` contract (merged to main)
   - [x] Lock required sections
   - [x] Lock backing fields
   - [x] Lock `<= 2000` token budget
   - [x] Lock overflow trimming order
-- [ ] `0.4` Freeze verification targets
-  - [ ] Lock Python repo classes in the test matrix
-  - [ ] Lock end-to-end report requirements
-  - [ ] Lock phase gates for freshness sequencing
+- [x] `0.4` Freeze verification targets (documented in Phase 2 test strategy)
+  - [x] Lock Python repo classes in the test matrix
+  - [x] Lock end-to-end report requirements
+  - [x] Lock phase gates for freshness sequencing
 
 ### Epic 1: Python Repo Input And Structure Scan
 
@@ -631,24 +640,24 @@ Owner: `Minimax` + `Codex` | Milestone: `P2-M4`
   - [x] Python web/service fixture (FastAPI / Flask / Django)
   - [x] Noisy Python fixture
   - [x] Mixed Python + JS/TS fixture
-- [ ] `6.2` Add contract and compatibility tests
-  - [ ] Schema validation for new fields
-  - [ ] Freshness enum coverage including `degraded`
-  - [ ] Additive compatibility checks against Phase 1
+- [x] `6.2` Add contract and compatibility tests
+  - [x] Schema validation for new fields
+  - [x] Freshness enum coverage including `degraded`
+  - [x] Additive compatibility checks against Phase 1
 - [ ] `6.3` Add comprehension and ranking tests
-  - [ ] Entry point credibility tests
+  - [x] Entry point credibility tests
   - [ ] Key-path anti-noise tests
-  - [ ] First-read-path justification tests
-  - [ ] Warning generation tests
+  - [x] First-read-path justification tests
+  - [x] Warning generation tests
 - [ ] `6.4` Add renderer and startup contract tests
   - [ ] `agent-start.md` snapshots
-  - [ ] Overflow trimming order tests
-  - [ ] Freshness rendering tests
-- [ ] `6.5` Produce Phase 2 end-to-end report
-  - [ ] Create `phase2-python-end2end-test-report.md`
-  - [ ] Evaluate false positives and false negatives
-  - [ ] Evaluate noise suppression
-  - [ ] Record ship/no-ship recommendation
+  - [x] Overflow trimming order tests
+  - [x] Freshness rendering tests
+- [x] `6.5` Produce Phase 2 end-to-end report
+  - [x] Create `phase2-python-end2end-test-report.md`
+  - [x] Evaluate false positives and false negatives
+  - [x] Evaluate noise suppression
+  - [x] Record ship/no-ship recommendation
 
 ### Epic 7: Freshness System
 

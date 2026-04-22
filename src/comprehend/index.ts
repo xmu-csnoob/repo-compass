@@ -314,6 +314,112 @@ export function buildComprehension(
     }
   }
 
+  // Python setup hints
+  const hasPyproject = scan.detected.manifests.some((m) => m.kind === "pyproject");
+  const hasRequirements = scan.detected.manifests.some((m) => m.kind === "requirements");
+  const hasSetupPy = scan.detected.manifests.some((m) => m.kind === "setup-py");
+  const hasSetupCfg = scan.detected.manifests.some((m) => m.kind === "setup-cfg");
+
+  if (hasPyproject || hasSetupPy || hasSetupCfg) {
+    agentHints.push({
+      kind: "setup" as const,
+      text: "Run pip install -e . to install the package in development mode.",
+      reason: "The repository uses a Python package manifest.",
+      confidence: "high" as const,
+      evidence: [hasPyproject ? "pyproject.toml" : hasSetupPy ? "setup.py" : "setup.cfg"],
+    });
+  }
+
+  if (hasRequirements) {
+    agentHints.push({
+      kind: "setup" as const,
+      text: "Run pip install -r requirements.txt to install dependencies.",
+      reason: "The repository lists dependencies in requirements.txt.",
+      confidence: "high" as const,
+      evidence: ["requirements.txt"],
+    });
+  }
+
+  // Python run hints — pick the highest-priority entrypoint
+  const pythonEntrypoints = signals.entrypoints.filter((e) => e.path.endsWith(".py"));
+  const pythonRunEntrypoint =
+    pythonEntrypoints.find((e) => e.kind === "server") ??
+    pythonEntrypoints.find((e) => e.kind === "cli") ??
+    pythonEntrypoints.find((e) => e.kind === "app") ??
+    pythonEntrypoints[0];
+
+  if (pythonRunEntrypoint !== undefined) {
+    const { path: epPath, kind: epKind } = pythonRunEntrypoint;
+    const hasDjango = hints.includes("django");
+    const hasFastapi = hints.includes("fastapi");
+    const hasFlask = hints.includes("flask");
+
+    if (epPath === "manage.py" && hasDjango) {
+      agentHints.push({
+        kind: "run" as const,
+        text: "Use python manage.py runserver to start the Django development server.",
+        reason: "Detected a Django manage.py entrypoint.",
+        confidence: "high" as const,
+        evidence: ["manage.py", "django"],
+      });
+    } else if ((epPath === "src/main.py" || epPath === "main.py") && hasFastapi) {
+      agentHints.push({
+        kind: "run" as const,
+        text: "Use uvicorn main:app --reload to start the FastAPI server.",
+        reason: "Detected a FastAPI main.py entrypoint.",
+        confidence: "high" as const,
+        evidence: ["fastapi", epPath],
+      });
+    } else if (epPath === "app.py" && hasFlask) {
+      agentHints.push({
+        kind: "run" as const,
+        text: "Use flask run to start the Flask development server.",
+        reason: "Detected a Flask app.py entrypoint.",
+        confidence: "high" as const,
+        evidence: ["flask", "app.py"],
+      });
+    } else if (epPath.endsWith("__main__.py")) {
+      const parts = epPath.split("/");
+      const pkgName = parts.length >= 2 ? parts[parts.length - 2] : "package";
+      agentHints.push({
+        kind: "run" as const,
+        text: `Use python -m ${pkgName} to run the CLI.`,
+        reason: "Detected a Python __main__.py entrypoint.",
+        confidence: "medium" as const,
+        evidence: [epPath],
+      });
+    } else if (epKind === "server" || epKind === "app") {
+      agentHints.push({
+        kind: "run" as const,
+        text: `Use python ${epPath} to run the application.`,
+        reason: "Detected a Python application entrypoint.",
+        confidence: "medium" as const,
+        evidence: [epPath],
+      });
+    }
+  }
+
+  // Python test hints
+  if (hints.includes("pytest") || allPathEntries.some((e) => e.path === "pytest.ini")) {
+    agentHints.push({
+      kind: "test" as const,
+      text: "Use pytest to exercise the test suite.",
+      reason: "pytest configuration or test files detected.",
+      confidence: "high" as const,
+      evidence: ["pytest"],
+    });
+  }
+
+  if (hints.includes("django")) {
+    agentHints.push({
+      kind: "test" as const,
+      text: "Use python manage.py test to run Django tests.",
+      reason: "Django project detected.",
+      confidence: "high" as const,
+      evidence: ["django"],
+    });
+  }
+
   const sourceDirectory = allPathEntries.find(
     (entry) => entry.kind === "directory" && entry.role === "source" && ["src", "app", "lib"].includes(entry.path),
   );

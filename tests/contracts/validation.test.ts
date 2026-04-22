@@ -371,6 +371,22 @@ describe("contextIndexSchema", () => {
     ).toMatchObject(minimalValid);
   });
 
+  it("parses a valid contextIndex with degraded freshness state", () => {
+    const degraded = {
+      ...minimalValid,
+      freshness: {
+        mode: "ci",
+        status: "degraded",
+        generated_from: "incremental",
+        reason: "Incremental refresh completed without equivalence proof.",
+      },
+    };
+
+    expect(
+      validateContract(contextIndexSchema, degraded, "contextIndex"),
+    ).toMatchObject(degraded);
+  });
+
   it("throws when extra top-level field is present", () => {
     const invalid = { ...minimalValid, run_id: "run-001" }; // run_id is not allowed
     expect(() =>
