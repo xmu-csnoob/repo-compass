@@ -67,4 +67,47 @@ describe("python comprehension quality", () => {
       'Skipping bin entrypoint "./dist/index.js" because it is not present in the scanned snapshot.',
     );
   });
+
+  it("noisy-python: key_paths exclude virtualenv, cache, build, dist, and migration paths", async () => {
+    const { comprehension } = await runFullPipeline("noisy-python");
+    const keyPathSet = new Set(comprehension.key_paths.map((k) => k.path));
+
+    for (const noisy of [
+      ".venv",
+      ".venv/bin/python",
+      ".venv/pyvenv.cfg",
+      "__pycache__",
+      "__pycache__/pipeline_cache.pyc",
+      "build",
+      "build/dist",
+      "dist",
+      "migrations",
+      "migrations/001_initial.py",
+    ]) {
+      expect(keyPathSet.has(noisy)).toBe(false);
+    }
+  });
+
+  it("noisy-python: defer_for_now includes generated and low-signal paths", async () => {
+    const { comprehension } = await runFullPipeline("noisy-python");
+    const deferPaths = comprehension.defer_for_now.map((d) => d.path);
+
+    expect(deferPaths).toContain("src/noisy_repo/generated/__init__.py");
+    expect(deferPaths).toContain("src/noisy_repo/generated/output.py");
+  });
+
+  it("python-fastapi: key_paths exclude test infrastructure paths", async () => {
+    const { comprehension } = await runFullPipeline("python-fastapi");
+    const keyPathSet = new Set(comprehension.key_paths.map((k) => k.path));
+
+    expect(keyPathSet.has("tests/conftest.py")).toBe(false);
+    expect(keyPathSet.has("tests/test_api.py")).toBe(false);
+  });
+
+  it("python-django: key_paths contain manage.py as entry but not migrations", async () => {
+    const { comprehension } = await runFullPipeline("python-django");
+    const keyPathSet = new Set(comprehension.key_paths.map((k) => k.path));
+
+    expect(keyPathSet.has("manage.py")).toBe(true);
+  });
 });

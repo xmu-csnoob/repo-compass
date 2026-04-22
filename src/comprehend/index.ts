@@ -12,11 +12,13 @@ import type {
   DeferForNowItem,
   RepoMetadata,
 } from "../contracts/index.js";
+import type { FreshnessResult } from "../freshness/index.js";
 
 export function buildComprehension(
   input: RepoInput,
   scan: import("../contracts/index.js").StructureScan,
   signals: SignalExtraction,
+  freshnessResult?: FreshnessResult,
 ): Comprehension {
   const allPathEntries = scan.paths;
   const pathSet = new Set(allPathEntries.map((entry) => entry.path));
@@ -495,14 +497,21 @@ export function buildComprehension(
     defer_for_now: deferForNow,
     agent_hints: agentHints,
     warnings: [...signals.warnings],
-    freshness: {
-      mode: input.options.freshness_mode,
-      status: "unknown",
-      generated_from: "full",
-      reason:
-        input.options.freshness_mode === "off"
-          ? "Freshness tracking is disabled for this run."
-          : "Freshness mode is declared, but verified freshness regeneration is not implemented yet.",
-    },
+    freshness: freshnessResult
+      ? {
+          mode: input.options.freshness_mode,
+          status: freshnessResult.status,
+          generated_from: freshnessResult.generated_from,
+          reason: freshnessResult.reason,
+        }
+      : {
+          mode: input.options.freshness_mode,
+          status: "unknown",
+          generated_from: "full",
+          reason:
+            input.options.freshness_mode === "off"
+              ? "Freshness tracking is disabled for this run."
+              : "Freshness mode is declared, but verified freshness regeneration is not implemented yet.",
+        },
   };
 }
