@@ -1,0 +1,12 @@
+{
+  "name": "script-config-noise-fixture",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build:node": "genesis-tsc --project ./tsconfig.node.json"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

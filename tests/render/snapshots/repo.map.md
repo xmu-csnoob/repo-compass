@@ -9,7 +9,6 @@
 ## First Read Path
 - `package.json`: Start here to understand workspace shape, scripts, and dependencies.
 - `src/index.ts`: This is likely the first runtime hop.
-- `tsconfig.json` [medium]: This path appears central to repo comprehension.
 - `README.md` [medium]: This path appears central to repo comprehension.
 
 ## Key Paths
@@ -22,6 +21,6 @@
 - `src/index.ts` (cli): Script "dev" points to this path.
 
 ## Critical Paths
-- cli:src/index.ts: src/index.ts
+- No multi-hop structural path was inferred from the current static graph.
 
 ## Defer For Now

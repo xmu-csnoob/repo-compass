@@ -148,6 +148,7 @@ Purpose:
 Purpose:
 
 - express the minimum stable understanding model used by all renderers
+- keep Phase 1 output grounded in static structure rather than repo-intent inference
 
 ```json
 {
@@ -273,6 +274,12 @@ Required sections:
 - `defer_for_now`
 - `agent_hints`
 
+Notes:
+
+- `repo.repo_shape` is a coarse structural classification derived from strong static signals
+- Phase 1 must not treat `repo_shape` as a reliable statement of repo purpose or architecture intent
+- `critical_paths` may be empty when the extracted graph does not support a multi-hop path
+
 ## 5. context-index.json Schema
 
 `context-index.json` is the published form of the comprehension representation.
@@ -281,6 +288,7 @@ Phase 1 rule:
 
 - keep this file equal to the canonical comprehension model or a strict superset
 - markdown and static agent renderers must derive from this file
+- suppress claims that require semantic repo-intent understanding rather than static evidence
 
 Minimum published schema:
 
@@ -334,6 +342,7 @@ Rules:
 - all inferred items must include `reason`
 - all inferred items must include `confidence`
 - summaries must not introduce unsupported conclusions
+- when a structural view is ambiguous, prefer omission or `mixed` over a stronger claim
 
 Evidence guidance:
 

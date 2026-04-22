@@ -83,6 +83,19 @@ describe("scan assertions (7.3)", () => {
 
     expect(scan.detected.manifests.some((m) => m.kind === "package-json")).toBe(true);
   });
+
+  it("vue-app: detects vue framework hint", async () => {
+    const { scan } = await runFullPipeline("vue-app");
+
+    expect(scan.detected.framework_hints).toContain("vue");
+  });
+
+  it("vue-app: does not detect tsconfig.node.json as a path entry with role entry", async () => {
+    const { scan } = await runFullPipeline("vue-app");
+
+    const tsconfigNodeEntry = scan.paths.find((p) => p.path === "tsconfig.node.json");
+    expect(tsconfigNodeEntry?.role).not.toBe("entry");
+  });
 });
 
 describe("entrypoint extraction assertions (7.3)", () => {
@@ -112,6 +125,37 @@ describe("entrypoint extraction assertions (7.3)", () => {
     // ./dist/index.js does not exist in the fixture, so it should not be an entrypoint
     const distEntrypoint = signals.entrypoints.find((e) => e.path === "./dist/index.js");
     expect(distEntrypoint).toBeUndefined();
+  });
+
+  it("script-config-noise: ignores tsconfig paths referenced by script flags", async () => {
+    const { signals } = await runFullPipeline("script-config-noise");
+
+    expect(signals.entrypoints.some((e) => e.path === "tsconfig.node.json")).toBe(false);
+    expect(signals.entrypoints.some((e) => e.path === "src/index.ts")).toBe(true);
+  });
+
+  it("vue-app: resolves extensionless script token to genesis.dev.ts", async () => {
+    const { signals } = await runFullPipeline("vue-app");
+
+    expect(signals.entrypoints.some((e) => e.path === "tsconfig.node.json")).toBe(false);
+    expect(signals.entrypoints.some((e) => e.path === "genesis.dev.ts")).toBe(true);
+  });
+});
+
+describe("comprehension assertions (7.3)", () => {
+  it("vue-app: repo_shape is application not service", async () => {
+    const { comprehension } = await runFullPipeline("vue-app");
+
+    expect(comprehension.repo.repo_shape).toBe("application");
+  });
+
+  it("vue-app: critical_paths is empty when entrypoint has no multi-hop import chain", async () => {
+    const { comprehension } = await runFullPipeline("vue-app");
+
+    // genesis.dev.ts imports genesis.ts (1 hop), so if that chain exists it's valid
+    // but we should not produce a single-step path
+    const singleStep = comprehension.critical_paths.filter((cp) => cp.steps.length < 2);
+    expect(singleStep).toHaveLength(0);
   });
 });
 

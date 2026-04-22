@@ -20,6 +20,7 @@ import type {
 
 type PackageJson = {
   readonly name?: string;
+  readonly main?: string;
   readonly scripts?: Record<string, string>;
   readonly bin?: string | Record<string, string>;
 };
@@ -148,9 +149,27 @@ function commandToPath(command: string, knownFilePaths: ReadonlySet<string>): st
 
   for (const token of tokens) {
     const cleaned = token.replace(/^['"]|['"]$/gu, "");
+    const normalized = normalizeCandidatePath(cleaned);
 
-    if (knownFilePaths.has(cleaned)) {
-      return cleaned;
+    if (cleaned.startsWith("-")) {
+      continue;
+    }
+
+    // Direct match with a recognized JS/TS extension
+    if (/\.[cm]?[jt]sx?$/u.test(normalized) && knownFilePaths.has(normalized)) {
+      return normalized;
+    }
+
+    // Extensionless resolution: "genesis.dev" → "genesis.dev.ts"
+    // Only attempt for tokens that look like paths (contain a dot or slash),
+    // not plain command names like "tsx" or "webpack".
+    if (normalized.includes(".") || normalized.includes("/")) {
+      for (const ext of SOURCE_FILE_EXTENSIONS) {
+        const candidate = `${normalized}${ext}`;
+        if (knownFilePaths.has(candidate)) {
+          return candidate;
+        }
+      }
     }
   }
 
@@ -264,6 +283,20 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
           reason: "package.json exposes a binary entrypoint.",
           confidence: "high",
           evidence: ["bin"],
+        });
+      }
+    }
+
+    if (packageJson.main !== undefined) {
+      const mainPath = normalizeCandidatePath(packageJson.main);
+      if (knownFilePaths.has(mainPath)) {
+        maybeAddEntrypoint(entrypoints, {
+          id: makeEntrypointId(mainPath, inferEntrypointKind(mainPath)),
+          path: mainPath,
+          kind: inferEntrypointKind(mainPath),
+          reason: "package.json main field points to this path.",
+          confidence: "high",
+          evidence: ["main"],
         });
       }
     }

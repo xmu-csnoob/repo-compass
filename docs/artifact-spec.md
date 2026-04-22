@@ -31,7 +31,7 @@ It should answer:
 
 - where to start reading
 - which commands likely matter first
-- where a safe early edit can begin
+- which observed source areas are safest to touch first
 - what to postpone on a first session
 
 ### Content Structure
@@ -39,13 +39,13 @@ It should answer:
 1. repo shape snapshot
 2. read-first path
 3. likely run and test entrypoints
-4. safe early edit zones
+4. likely source edit areas
 5. defer-for-now areas
 6. watch-outs
 
 ### Required Sections
 
-- `What This Repo Appears To Be`
+- `What Was Detected`
 - `Read First`
 - `Likely Entrypoints`
 - `Getting Oriented`
@@ -72,6 +72,7 @@ It should answer:
 - directly observed facts may omit tags
 - setup or edit guidance should show confidence when inferred
 - low-confidence items should usually be omitted
+- repo-shape wording must stay coarse and should not claim architectural intent
 
 ## 2. repo.map.md
 
@@ -91,9 +92,9 @@ It should answer:
 
 It should answer:
 
-- what the repo appears to contain
+- what the static scan observed
 - which paths matter most
-- how the likely structure hangs together
+- how the visible structure hangs together
 - which areas can wait
 
 ### Content Structure
@@ -102,7 +103,7 @@ It should answer:
 2. first-read path
 3. key paths
 4. entrypoints
-5. critical paths
+5. critical paths when multi-hop graph evidence exists
 6. defer-for-now zones
 
 ### Required Sections
@@ -111,11 +112,11 @@ It should answer:
 - `First Read Path`
 - `Key Paths`
 - `Entrypoints`
-- `Critical Paths`
 - `Defer For Now`
 
 ### Optional Sections
 
+- `Critical Paths`
 - `Ecosystem Signals`
 - `Open Questions`
 
@@ -132,6 +133,7 @@ It should answer:
 - inferred entrypoints and critical paths should show confidence unless high
 - reasons should be short and attached to each item
 - low-confidence items should be rare
+- when no multi-hop path is supported by the graph, say so instead of fabricating one
 
 ## 3. context-index.json
 
@@ -155,7 +157,7 @@ It should contain:
 
 - graph-backed structural facts
 - evidence-backed inferences
-- task-oriented derived views
+- task-oriented but conservative derived views
 - lightweight run metadata for reproducibility
 
 ### Required Top-Level Fields
@@ -208,6 +210,7 @@ It should contain:
 - `entrypoints` and `key_paths` should carry `evidence`
 - other inferred sections may carry `evidence` when needed
 - directly observed structural facts may omit confidence
+- `repo_shape` is a coarse structural classification, not a statement of repo intent
 
 ## 4. Artifact Relationship Rules
 

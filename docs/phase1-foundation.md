@@ -21,6 +21,7 @@ Phase 1 design principles:
 
 - `context-index.json` is the single source of truth
 - prefer deterministic structural signals over narration
+- only publish claims that are directly observed or conservatively derivable from static evidence
 - optimize for first-session usefulness, especially for coding agents
 - derived views may summarize, but must not invent new claims
 - low-confidence inference should be suppressed from the default agent path
@@ -31,7 +32,7 @@ Phase 1 should answer these questions quickly:
 
 - where should a new human or agent start reading
 - which files and directories matter first
-- what are the likely entrypoints and critical paths
+- what are the likely entrypoints and source areas
 - what can be deferred on a first pass
 - what minimal setup context matters before safe edits begin
 
@@ -39,6 +40,7 @@ This tool is not:
 
 - a generic repo summarizer
 - a full architecture reconstruction system
+- a reliable repo-intent classifier
 - a runtime tracing platform
 - a correctness oracle for dynamic systems
 - a cross-repository dependency analysis tool
@@ -82,6 +84,7 @@ Acute pain point:
 - deterministic summaries backed by evidence
 - prioritization of key paths for first read
 - detection of defer-for-now areas
+- coarse structural classification only when supported by strong static signals
 - generation of canonical metadata and markdown views
 - generation of static agent-facing derived files after metadata exists
 
@@ -95,6 +98,7 @@ Acute pain point:
 - mandatory MCP support in Phase 1
 - automatic browser opening as the default CLI behavior
 - heavy LLM narration over raw source
+- architecture-intent inference such as deciding the repo's true product purpose
 
 ### Framework Priority
 
@@ -224,6 +228,7 @@ Responsibilities:
 - derive first-read and key-path views from the graph
 - attach evidence, reasons, and confidence to inferred claims
 - generate deterministic summaries without introducing unsupported claims
+- keep `repo_shape`, `critical_paths`, and edit guidance conservative and structural rather than semantic
 
 Output:
 

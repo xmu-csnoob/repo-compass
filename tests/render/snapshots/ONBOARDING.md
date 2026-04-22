@@ -7,7 +7,6 @@
 ## Read First
 - `package.json`: Start here to understand workspace shape, scripts, and dependencies.
 - `src/index.ts`: This is likely the first runtime hop.
-- `tsconfig.json` [medium]: This path appears central to repo comprehension.
 - `README.md` [medium]: This path appears central to repo comprehension.
 
 ## Likely Entrypoints
@@ -18,6 +17,6 @@
 - Use npm test to exercise the existing test workflow.
 
 ## Safe Early Edit Zones
-- Start edits near src/index.ts before touching generated or vendor paths. [medium]
+- Prefer edits under src before touching config, build, generated, or vendor paths.
 
 ## Defer For Now
