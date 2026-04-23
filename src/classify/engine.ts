@@ -37,13 +37,13 @@ function buildManifestHints(
 
     // Manifest is directly inside this directory.
     if (manifestDir === dirPath || manifestDir === `${dirPath}/`) {
-      hints.add(path.posix.basename(manifestDir));
+      hints.add(manifest.kind);
       continue;
     }
 
     // Manifest is somewhere inside this directory tree.
     if (manifest.path.startsWith(`${dirPath}/`)) {
-      hints.add(path.posix.basename(manifestDir));
+      hints.add(manifest.kind);
     }
   }
 
@@ -147,7 +147,7 @@ export async function buildIntentMap(
   scan: StructureScan,
   options: { maxDepth?: number; runId?: string } = {},
 ): Promise<IntentMap> {
-  const maxDepth = options.maxDepth ?? 2;
+  const maxDepth = Math.min(Math.max(options.maxDepth ?? 2, 1), 2);
   const runId = options.runId ?? scan.run_id;
   const classifier = new StaticClassifier();
 
