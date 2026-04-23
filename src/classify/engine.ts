@@ -69,7 +69,7 @@ function buildChildren(
       continue;
     }
 
-    if (!entry.path.startsWith(prefix) || entry.path === dirPath) {
+    if (!entry.path.startsWith(prefix) || entry.path === normalizedDir) {
       continue;
     }
 
@@ -146,7 +146,7 @@ export class StaticClassifier implements DirectoryClassifier {
         intent: evidence.parent_intent,
         confidence: "medium",
         reason: "inherits intent from parent directory",
-        method: "static",
+        method: this.method,
       };
     }
 
@@ -157,7 +157,7 @@ export class StaticClassifier implements DirectoryClassifier {
       intent: "unknown",
       confidence: "low",
       reason: "no matching classification rule",
-      method: "static",
+      method: this.method,
     };
   }
 }
