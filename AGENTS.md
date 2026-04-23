@@ -49,6 +49,25 @@ git worktree add .worktrees/phase3-codex -b phase3-codex
 - Do NOT switch branches in the main worktree.
 - Do NOT run `git checkout` to jump between branches — that's what worktrees are for.
 
+### Important: Pre-create the Worktree and Branch
+
+**Claude Code subagents**: Do NOT use `isolation: "worktree"` in the `Agent` tool call, because Claude Code creates a **random branch name** (e.g., `worktree-agent-xxxxx`) that does not follow the `phase-{N}-{model}` convention.
+
+Instead:
+1. **The main agent pre-creates the worktree and branch**:
+   ```bash
+   git worktree add .worktrees/phase{N}-{model} -b phase{N}-{model}
+   ```
+2. **Dispatch the subagent without `isolation`** and tell it to work inside the pre-created directory:
+   ```
+   cd .worktrees/phase3-codex
+   # do your development here
+   git add ...
+   git commit -m "..."
+   git push -u origin phase3-codex
+   ```
+3. Other platforms with similar automatic worktree creation should follow the same pre-create pattern.
+
 ## 3. Branch Naming Convention
 
 All feature branches for parallel agent work:
