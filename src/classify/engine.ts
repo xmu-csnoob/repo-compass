@@ -20,7 +20,7 @@ import type {
  * Root has depth 0, root-level children depth 1, grandchildren depth 2, etc.
  */
 function computeDepth(repoRelativePath: string): number {
-  const normalized = repoRelativePath.replace(/^\.\//, "");
+  const normalized = path.posix.normalize(repoRelativePath);
   if (normalized === "" || normalized === ".") {
     return 0;
   }
@@ -60,7 +60,8 @@ function buildChildren(
   dirPath: string,
   scan: StructureScan,
 ): string[] {
-  const prefix = dirPath === "" ? "" : `${dirPath}/`;
+  const normalizedDir = path.posix.normalize(dirPath);
+  const prefix = normalizedDir === "" ? "" : `${normalizedDir}/`;
   const children = new Set<string>();
 
   for (const entry of scan.paths) {
@@ -131,7 +132,7 @@ export class StaticClassifier implements DirectoryClassifier {
         intent: match.intent,
         confidence: match.confidence,
         reason: match.reason,
-        method: match.method,
+        method: this.method,
       };
     }
 
@@ -177,7 +178,13 @@ export async function buildIntentMap(
   scan: StructureScan,
   options: { maxDepth?: number; runId?: string } = {},
 ): Promise<IntentMap> {
-  const maxDepth = Math.min(Math.max(options.maxDepth ?? 2, 1), 2);
+  const requestedMaxDepth = options.maxDepth ?? 2;
+  if (requestedMaxDepth < 1 || requestedMaxDepth > 2) {
+    throw new RangeError(
+      `maxDepth must be between 1 and 2, got ${requestedMaxDepth}`,
+    );
+  }
+  const maxDepth = requestedMaxDepth;
   const runId = options.runId ?? scan.run_id;
   const classifier = new StaticClassifier();
 
@@ -245,7 +252,7 @@ export function createFileResolver(
   }
 
   return (filePath: string): DirectoryIntent => {
-    let current = filePath;
+    let current = path.posix.normalize(filePath);
 
     do {
       if (current === "." || current === "") {
