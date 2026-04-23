@@ -13,18 +13,73 @@ Authoritative design source:
 This Kanban is an execution document derived from those four files. If this
 plan conflicts with the frozen design pack, the frozen design pack wins.
 
-## Single-Model Parallel Rule
+## Team Shape
 
-Phase 3 parallelism assumes multiple agents of the same model family can work
-in parallel after interface freeze.
+Actual developer profile for Phase 3:
+
+- `Codex`
+  - strongest engineering judgment
+  - best for interface freeze, contracts, integration, and high-coupling module
+    boundaries
+- `Kimi`
+  - strong bounded implementation speed
+  - best for classifier module buildout and deterministic feature slices after
+    interface freeze
+- `Minimax`
+  - best reserved for low-risk, spec-locked, easy-to-verify work
+  - should not own ambiguous inference policy, contract semantics, or
+    integration-critical routing
+
+Assignment rules:
+
+- `Codex` owns all interface-freeze work and any task that defines APIs used by
+  the other agents.
+- `Codex` also owns final integration, acceptance, and any work touching both
+  `src/cli/` and core extraction flow.
+- `Kimi` owns the main bounded implementation slices once contracts and module
+  boundaries are stable.
+- `Minimax` only owns narrow, spec-locked tasks with explicit acceptance
+  criteria and small write scopes.
+- Do not assign intent semantics, contract design, or critical-path integration
+  to `Minimax`.
+
+Recommended role mapping:
+
+- `Codex: Architecture + Integration`
+  - Wave 0 interface freeze
+  - contracts and classifier interface decisions
+  - orchestration and extraction integration
+  - final acceptance and PR integration
+- `Kimi: Bounded Feature Implementation`
+  - classify module implementation
+  - deterministic rule engine work
+  - debug artifact policy once orchestration shape is frozen
+- `Minimax: Low-Risk Support Work`
+  - classifier unit tests
+  - regression fixtures with explicit expected outputs
+  - validation notes and execution-doc maintenance
+
+## Parallel Rule
+
+Phase 3 uses two layers of parallelism:
+
+- primary ownership is assigned across `Codex`, `Kimi`, and `Minimax`
+- within a model lane, same-model subagents may still work in parallel after
+  interface freeze
 
 Rules:
 
-- treat this as same-model parallel execution, not cross-model specialization
+- `Codex` starts first and freezes interfaces
+- `Kimi` starts once contracts and module boundaries are stable
+- `Minimax` starts only after acceptance criteria are concrete
+- never block `Codex` on `Minimax`
+- same-model parallel work is allowed only inside a settled owner lane with
+  disjoint write scopes
+
 - parallel tasks must have disjoint primary write scopes
 - no agent should redefine contracts, classifier semantics, or extraction policy
   once the interface-freeze wave is complete without updating the frozen docs
-- integration remains a single-owner task
+- integration remains a single-owner task under `Codex`
 
 ## Delivery Milestones
 
@@ -79,7 +134,7 @@ flowchart TD
 
 ### Wave 0: Interface Freeze
 
-Owner: integration lead  
+Owner: `Codex`  
 Milestone: `M0`
 
 - [ ] `0.1` Confirm frozen whitepaper is the sole Phase 3 design source
@@ -100,7 +155,7 @@ Write scope:
 
 ### Epic 1: Contracts And Classifier Surface
 
-Owner: Agent A  
+Owner: `Codex`  
 Milestone: `M1`  
 Depends on: `0.2`
 
@@ -123,10 +178,13 @@ Parallel safety:
 
 - may run in parallel with Epic 2 after `0.2`
 - must not overlap with extractor implementation files
+- same-model parallel option:
+  - one `Codex` lane on enums/schemas
+  - one `Codex` lane on types/interface documentation
 
 ### Epic 2: Classify Module
 
-Owner: Agent B  
+Owner: `Kimi`  
 Milestone: `M1`  
 Depends on: `0.2`
 
@@ -145,10 +203,14 @@ Parallel safety:
 
 - can run in parallel with Epic 1 and Epic 4 after `0.2`
 - should expose stubs/interfaces early so extraction work can start
+- same-model parallel option:
+  - one `Kimi` lane on `engine.ts`
+  - one `Kimi` lane on `rules.ts`
+  - keep `index.ts` ownership single-threaded
 
 ### Epic 3: Orchestration And Extraction
 
-Owner: Agent C  
+Owner: `Codex`  
 Milestone: `M2`  
 Depends on: `1.1`, `2.1`
 
@@ -170,10 +232,14 @@ Parallel safety:
 
 - starts after Epic 1 interface and Epic 2 scaffold are stable
 - should not modify `src/classify/rules.ts`
+- same-model parallel option:
+  - one `Codex` lane on `extract/`
+  - one `Codex` lane on `cli/`
+  - only after file ownership is pre-split
 
 ### Epic 4: Classifier Tests
 
-Owner: Agent D  
+Owner: `Minimax`  
 Milestone: `M2`  
 Depends on: `0.2`
 
@@ -193,10 +259,13 @@ Parallel safety:
 
 - can run in parallel with Epic 2
 - may need light fixture additions if isolated
+- same-model parallel option:
+  - one `Minimax` lane on rule-priority coverage
+  - one `Minimax` lane on ancestor and boundary coverage
 
 ### Epic 5: Extraction Regression And Real-Repo Validation
 
-Owner: Agent E  
+Owner: `Minimax`  
 Milestone: `M3`  
 Depends on: `3.4`
 
@@ -216,10 +285,14 @@ Parallel safety:
 
 - starts after extractor suppression behavior lands
 - should avoid touching core contracts
+- review gate: `Codex`
+- same-model parallel option:
+  - one `Minimax` lane on fixture regressions
+  - one `Minimax` lane on real-repo validation notes
 
 ### Epic 6: Debug Artifact And CLI Output Policy
 
-Owner: Agent F  
+Owner: `Kimi`  
 Milestone: `M3`  
 Depends on: `1.3`, `3.1`
 
@@ -236,10 +309,11 @@ Parallel safety:
 
 - may run alongside Epic 5 once orchestration is stable
 - coordinate with Epic 3 if both touch `src/cli/`
+- review gate: `Codex`
 
 ### Epic 7: Docs And Coordination
 
-Owner: integration lead  
+Owner: `Codex`  
 Milestone: `M4`  
 Depends on: `5.4`, `6.3`
 
@@ -262,21 +336,35 @@ Parallel safety:
 
 These are the safe same-model parallel routes after Wave 0:
 
-### Route A: Contracts + Classifier Buildout
+### Route A: `Codex` + `Kimi` + `Minimax` Primary Split
 
-- Agent A: Epic 1
-- Agent B: Epic 2
-- Agent D: Epic 4
+- `Codex`: Epic 1
+- `Kimi`: Epic 2
+- `Minimax`: Epic 4
 
 Reason:
 
-- write scopes are mostly disjoint
-- classifier tests can start once interfaces are frozen
+- write scopes are disjoint enough after Wave 0
+- this is the first true multi-agent parallel window
 
-### Route B: Extraction + Debug Output
+### Route B: Same-Model `Kimi` Parallel Split
 
-- Agent C: Epic 3
-- Agent F: Epic 6
+- `Kimi` lane 1: `src/classify/engine.ts`
+- `Kimi` lane 2: `src/classify/rules.ts`
+
+Start condition:
+
+- after `Codex` freezes the contracts and the classify interface
+
+Reason:
+
+- classifier engine and declarative rules are separable if `index.ts` ownership
+  stays single-threaded
+
+### Route C: Same-Model `Codex` Parallel Split
+
+- `Codex` lane 1: extraction integration in `src/extract/`
+- `Codex` lane 2: orchestration/debug path in `src/cli/`
 
 Start condition:
 
@@ -288,12 +376,12 @@ Risk:
 
 Mitigation:
 
-- pre-assign `src/cli/` ownership to one route at a time, or split by file
-  ownership before both begin
+- pre-split file ownership before both lanes begin
 
-### Route C: Validation
+### Route D: `Kimi` + `Minimax` Downstream Validation Window
 
-- Agent E: Epic 5
+- `Kimi`: Epic 6
+- `Minimax`: Epic 5
 
 Start condition:
 
@@ -301,7 +389,7 @@ Start condition:
 
 Reason:
 
-- validation is downstream and should not block earlier interface work
+- validation and debug output are downstream and mostly disjoint
 
 ## Critical Path
 
