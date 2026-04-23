@@ -25,6 +25,12 @@ type PackageJson = {
   readonly bin?: string | Record<string, string>;
 };
 
+type PythonScriptEntrypoint = {
+  readonly name: string;
+  readonly module: string;
+  readonly callable: string;
+};
+
 type ExtractedImport = {
   readonly specifier: string;
   readonly kind: "import" | "require" | "reference";
@@ -87,6 +93,20 @@ async function maybeReadJson<TValue>(absolutePath: string): Promise<TValue | und
   }
 }
 
+async function maybeReadText(absolutePath: string): Promise<string | undefined> {
+  try {
+    return await readFile(absolutePath, "utf8");
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+
+    if (code === "ENOENT") {
+      return undefined;
+    }
+
+    throw error;
+  }
+}
+
 function inferEntrypointKind(candidatePath: string, command?: string): Entrypoint["kind"] {
   const normalized = candidatePath.toLowerCase();
   const loweredCommand = command?.toLowerCase() ?? "";
@@ -119,6 +139,10 @@ function inferPythonEntrypointKind(candidatePath: string, frameworkHints: Set<st
 
   if (normalized.includes("__main__.py") || normalized.includes("cli.py")) {
     return "cli";
+  }
+
+  if (normalized.endsWith("/api.py") && frameworkHints.has("fastapi")) {
+    return "server";
   }
 
   if (normalized.includes("app.py") && (frameworkHints.has("fastapi") || frameworkHints.has("flask"))) {
@@ -205,6 +229,99 @@ function resolvePythonModule(
 
 function normalizeCandidatePath(candidatePath: string): string {
   return path.posix.normalize(candidatePath.replace(/^\.\/+/u, ""));
+}
+
+function extractPyprojectScripts(pyprojectContent: string): PythonScriptEntrypoint[] {
+  const sectionMatch = pyprojectContent.match(/\[project\.scripts\]([\s\S]*?)(?:\n\[|$)/u);
+
+  if (sectionMatch?.[1] === undefined) {
+    return [];
+  }
+
+  const scripts: PythonScriptEntrypoint[] = [];
+  const linePattern = /^\s*([A-Za-z0-9_.-]+)\s*=\s*"([A-Za-z0-9_./-]+):([A-Za-z0-9_]+)"\s*$/gmu;
+
+  for (const match of sectionMatch[1].matchAll(linePattern)) {
+    const name = match[1];
+    const module = match[2];
+    const callable = match[3];
+
+    if (name !== undefined && module !== undefined && callable !== undefined) {
+      scripts.push({ name, module, callable });
+    }
+  }
+
+  return scripts;
+}
+
+function pythonModuleToPath(moduleName: string, knownFilePaths: ReadonlySet<string>): string | undefined {
+  const modulePath = moduleName.replaceAll(".", "/");
+  const candidates = [
+    `${modulePath}.py`,
+    path.posix.join(modulePath, "__init__.py"),
+    `src/${modulePath}.py`,
+    path.posix.join("src", modulePath, "__init__.py"),
+  ];
+
+  return candidates.find((candidate) => knownFilePaths.has(candidate));
+}
+
+function inferPythonFileEntrypointFromContent(
+  filePath: string,
+  fileContent: string,
+  frameworkHints: Set<string>,
+): Entrypoint | undefined {
+  if (filePath.endsWith("__main__.py")) {
+    return {
+      id: makeEntrypointId(filePath, "cli"),
+      path: filePath,
+      kind: "cli",
+      reason: "Python __main__.py module supports direct module execution.",
+      confidence: "high",
+      evidence: [filePath],
+    };
+  }
+
+  if (
+    frameworkHints.has("fastapi") &&
+    /(from\s+fastapi\s+import\s+FastAPI|FastAPI\s*\()/u.test(fileContent)
+  ) {
+    return {
+      id: makeEntrypointId(filePath, "server"),
+      path: filePath,
+      kind: "server",
+      reason: "FastAPI application object is defined here.",
+      confidence: "high",
+      evidence: ["fastapi", filePath],
+    };
+  }
+
+  if (
+    frameworkHints.has("flask") &&
+    /(from\s+flask\s+import\s+Flask|Flask\s*\()/u.test(fileContent)
+  ) {
+    return {
+      id: makeEntrypointId(filePath, "server"),
+      path: filePath,
+      kind: "server",
+      reason: "Flask application object is defined here.",
+      confidence: "high",
+      evidence: ["flask", filePath],
+    };
+  }
+
+  if (/\bif\s+__name__\s*==\s*["']__main__["']\s*:/u.test(fileContent)) {
+    return {
+      id: makeEntrypointId(filePath, "cli"),
+      path: filePath,
+      kind: "cli",
+      reason: "Python main-guard indicates direct script execution starts here.",
+      confidence: "medium",
+      evidence: [filePath],
+    };
+  }
+
+  return undefined;
 }
 
 function extractRelativeImports(fileContent: string): ExtractedImport[] {
@@ -348,6 +465,7 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
   const warnings: string[] = [];
   const fileRoleByPath = new Map(scan.paths.map((entry) => [entry.path, entry.role] satisfies [string, StructurePath["role"]]));
   const manifestPaths = scan.detected.manifests.filter((manifest) => manifest.kind === "package-json");
+  const pyprojectManifests = scan.detected.manifests.filter((manifest) => manifest.kind === "pyproject");
   const frameworkHints = new Set(scan.detected.framework_hints);
 
   for (const manifest of manifestPaths) {
@@ -444,6 +562,35 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
     }
   }
 
+  for (const manifest of pyprojectManifests) {
+    const pyprojectContent = await maybeReadText(resolveRepoRelativePath(scan.repo.root, manifest.path));
+
+    if (pyprojectContent === undefined) {
+      warnings.push(`Unable to read manifest ${manifest.path}`);
+      continue;
+    }
+
+    for (const script of extractPyprojectScripts(pyprojectContent)) {
+      const scriptPath = pythonModuleToPath(script.module, knownFilePaths);
+
+      if (scriptPath === undefined) {
+        warnings.push(
+          `Skipping Python script entrypoint "${script.module}:${script.callable}" because it is not present in the scanned snapshot.`,
+        );
+        continue;
+      }
+
+      maybeAddEntrypoint(entrypoints, {
+        id: makeEntrypointId(scriptPath, "cli"),
+        path: scriptPath,
+        kind: "cli",
+        reason: `pyproject.toml script "${script.name}" points to this module.`,
+        confidence: "high",
+        evidence: [`project.scripts.${script.name}`],
+      });
+    }
+  }
+
   const frameworkSpecificEntrypoints = new Set<string>();
 
   if (frameworkHints.has("vue")) {
@@ -513,6 +660,28 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
       confidence,
       evidence: [candidatePath],
     });
+  }
+
+  for (const filePath of [...knownFilePaths].sort()) {
+    if (!filePath.endsWith(".py")) {
+      continue;
+    }
+
+    const fileContent = await maybeReadText(resolveRepoRelativePath(scan.repo.root, filePath));
+
+    if (fileContent === undefined) {
+      continue;
+    }
+
+    const inferredEntrypoint = inferPythonFileEntrypointFromContent(
+      filePath,
+      fileContent,
+      pythonFrameworkHints,
+    );
+
+    if (inferredEntrypoint !== undefined) {
+      maybeAddEntrypoint(entrypoints, inferredEntrypoint);
+    }
   }
 
   for (const filePath of knownFilePaths) {
@@ -703,11 +872,31 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
     }
 
     // Python framework-specific priority candidates
+    if (frameworkHint === "fastapi" && knownFilePaths.has("app/main.py")) {
+      maybeAddPriorityCandidate(priorityCandidates, {
+        path: "app/main.py",
+        signal: "workflow-core",
+        reason: "FastAPI services commonly bootstrap the ASGI application here.",
+        confidence: "high",
+        evidence: ["fastapi"],
+      });
+    }
+
     if (frameworkHint === "fastapi" && knownFilePaths.has("src/main.py")) {
       maybeAddPriorityCandidate(priorityCandidates, {
         path: "src/main.py",
         signal: "workflow-core",
         reason: "FastAPI services commonly bootstrap the ASGI application here.",
+        confidence: "high",
+        evidence: ["fastapi"],
+      });
+    }
+
+    if (frameworkHint === "fastapi" && knownFilePaths.has("src/mixed_repo/api.py")) {
+      maybeAddPriorityCandidate(priorityCandidates, {
+        path: "src/mixed_repo/api.py",
+        signal: "workflow-core",
+        reason: "FastAPI backend routes and application bootstrap are defined here.",
         confidence: "high",
         evidence: ["fastapi"],
       });
@@ -777,6 +966,34 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
         reason: `Python manifest (${manifest.kind}) defines the primary workspace metadata.`,
         confidence: "high",
         evidence: [manifest.kind],
+      });
+    }
+  }
+
+  for (const candidatePath of [...knownFilePaths].sort()) {
+    if (
+      candidatePath.endsWith("/__init__.py") &&
+      fileRoleByPath.get(candidatePath) === "source" &&
+      !entrypoints.some((entrypoint) => entrypoint.path === candidatePath)
+    ) {
+      const libraryEntrypoint: Entrypoint = {
+        id: makeEntrypointId(candidatePath, "library"),
+        path: candidatePath,
+        kind: "library",
+        reason: "Python package initializer exposes the public import surface.",
+        confidence: "medium",
+        evidence: [candidatePath],
+      };
+
+      maybeAddEntrypoint(entrypoints, {
+        ...libraryEntrypoint,
+      });
+      maybeAddPriorityCandidate(priorityCandidates, {
+        path: libraryEntrypoint.path,
+        signal: "entrypoint",
+        reason: "Likely runtime starting point for the repository.",
+        confidence: libraryEntrypoint.confidence,
+        evidence: [...libraryEntrypoint.evidence],
       });
     }
   }

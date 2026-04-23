@@ -453,12 +453,26 @@ Phase 1 is done only when all of the following are true:
 
 ## Current Status
 
-- As of `2026-04-22`, local `main` is synced with `origin/main` at `aff866a`.
-- Local uncommitted work is focused on Python-specific `agent_hints` generation in `src/comprehend/index.ts`.
-- Current local additions cover setup hints, Python run hints, and Python test hints for onboarding-oriented guidance.
-- Contract and planning docs now cover the frozen Python scope, verification matrix, startup contract, and freshness sequencing rules.
-- Contract compatibility checks, first-read-path justification coverage, warning propagation coverage, overflow trimming tests, and the Phase 2 end-to-end report are now in place.
-- Freshness metadata is scaffolded in contracts and renderers, but runtime freshness behavior is not implemented yet; the emitted status is still effectively `unknown`.
+- As of `2026-04-23`, the current local `main` HEAD is `1d14627`.
+- Mainline build and test verification passed on `2026-04-23`:
+  - `npm run build`
+  - `npx vitest run --exclude '.worktrees/**'`
+- Mainline fixture and snapshot coverage is green, including:
+  - renderer snapshots for `repo.map.md`, `ONBOARDING.md`, `context-index.json`, and `agent-start.md`
+  - CLI pipeline output writing
+  - Python comprehension quality checks
+  - freshness state verification for `off|watch|ci`
+- Freshness runtime behavior is now implemented on `main`:
+  - first watch-mode run reports `degraded`
+  - repeated watch-mode run on an unchanged snapshot reports `fresh`
+  - CI mode reports `fresh`
+- The refreshed `2026-04-23` end-to-end audit is now green for the scoped Python fixture set:
+  - `python-cli` surfaces CLI entrypoints from `pyproject.toml` scripts and `__main__.py`
+  - `python-library` surfaces the package import surface from `__init__.py`
+  - `python-fastapi`, `python-flask`, and `python-django` surface stable service entrypoints
+  - `mixed-python-js` surfaces the Python backend entrypoint alongside Node manifests
+  - noisy Python migration and generated paths stay in `defer_for_now`
+- Phase 2 is now considered shippable on `main` for the scoped repository classes.
 
 ## Delivery Milestones
 

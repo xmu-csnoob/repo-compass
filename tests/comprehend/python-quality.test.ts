@@ -57,6 +57,17 @@ describe("python comprehension quality", () => {
     });
   });
 
+  it("python-fastapi: surfaces app/main.py as a server entrypoint and key path", async () => {
+    const { comprehension } = await runFullPipeline("python-fastapi");
+
+    expect(
+      comprehension.entrypoints.some(
+        (entrypoint) => entrypoint.path === "app/main.py" && entrypoint.kind === "server",
+      ),
+    ).toBe(true);
+    expect(comprehension.key_paths.some((keyPath) => keyPath.path === "app/main.py")).toBe(true);
+  });
+
   it("node-cli: warning generation surfaces skipped bin entrypoints and republishes them in comprehension", async () => {
     const { signals, comprehension } = await runFullPipeline("node-cli");
 
@@ -111,6 +122,38 @@ describe("python comprehension quality", () => {
     expect(keyPathSet.has("manage.py")).toBe(true);
   });
 
+  it("python-cli: resolves pyproject script modules to a CLI entrypoint", async () => {
+    const { comprehension } = await runFullPipeline("python-cli");
+
+    expect(
+      comprehension.entrypoints.some(
+        (entrypoint) => entrypoint.path === "src/python_cli_repo/cli.py" && entrypoint.kind === "cli",
+      ),
+    ).toBe(true);
+    expect(comprehension.key_paths.some((keyPath) => keyPath.path === "src/python_cli_repo/cli.py")).toBe(true);
+  });
+
+  it("python-library: exposes package __init__.py as the library entry surface", async () => {
+    const { comprehension } = await runFullPipeline("python-library");
+
+    expect(
+      comprehension.entrypoints.some(
+        (entrypoint) =>
+          entrypoint.path === "src/python_lib_repo/__init__.py" && entrypoint.kind === "library",
+      ),
+    ).toBe(true);
+    expect(
+      comprehension.key_paths.some((keyPath) => keyPath.path === "src/python_lib_repo/__init__.py"),
+    ).toBe(true);
+  });
+
+  it("python-flask: keeps flask without incorrectly adding fastapi", async () => {
+    const { comprehension } = await runFullPipeline("python-flask");
+
+    expect(comprehension.repo.framework_hints).toContain("flask");
+    expect(comprehension.repo.framework_hints).not.toContain("fastapi");
+  });
+
   it("mixed-python-js: detects both Python and JavaScript/TypeScript ecosystems", async () => {
     const { comprehension } = await runFullPipeline("mixed-python-js");
 
@@ -124,5 +167,16 @@ describe("python comprehension quality", () => {
 
     expect(keyPaths).toContain("pyproject.toml");
     expect(keyPaths).toContain("package.json");
+  });
+
+  it("mixed-python-js: surfaces the FastAPI backend module as a server entrypoint", async () => {
+    const { comprehension } = await runFullPipeline("mixed-python-js");
+
+    expect(
+      comprehension.entrypoints.some(
+        (entrypoint) => entrypoint.path === "src/mixed_repo/api.py" && entrypoint.kind === "server",
+      ),
+    ).toBe(true);
+    expect(comprehension.key_paths.some((keyPath) => keyPath.path === "src/mixed_repo/api.py")).toBe(true);
   });
 });

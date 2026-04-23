@@ -107,6 +107,8 @@ function classifyPathRole(entry: WalkEntry): StructurePath["role"] {
     entry.repoRelativePath.startsWith(".output/") ||
     entry.repoRelativePath.startsWith("build/") ||
     entry.repoRelativePath.startsWith("dist/") ||
+    entry.repoRelativePath.startsWith("migrations/") ||
+    entry.repoRelativePath.includes("/migrations/") ||
     entry.repoRelativePath.startsWith("__pycache__/") ||
     entry.repoRelativePath.includes("/__pycache__/") ||
     entry.repoRelativePath.startsWith(".pytest_cache/") ||
@@ -235,7 +237,12 @@ function detectFrameworkHints(entries: readonly WalkEntry[], packageJsonContent?
   if (hasPythonFiles || pyprojectText || requirementsText) {
     const allPythonText = `${pyprojectText} ${requirementsText}`;
 
-    if (/fastapi/u.test(allPythonText) || allPaths.has("src/main.py") || allPaths.has("app.py")) {
+    if (
+      /fastapi/u.test(allPythonText) ||
+      allPaths.has("app/main.py") ||
+      allPaths.has("src/main.py") ||
+      allPaths.has("main.py")
+    ) {
       hints.add("fastapi");
     }
 
