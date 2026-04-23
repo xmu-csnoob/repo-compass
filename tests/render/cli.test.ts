@@ -32,6 +32,7 @@ describe("CLI pipeline", () => {
     await expect(readFile(path.join(runRoot, "context-index.json"), "utf8")).resolves.toContain('"schema_version": "2.0"');
     await expect(readFile(path.join(runRoot, "outputs", "repo.map.md"), "utf8")).resolves.toContain("# Repo Map");
     await expect(readFile(path.join(runRoot, "outputs", "ONBOARDING.md"), "utf8")).resolves.toContain("# ONBOARDING");
+    await expect(readFile(path.join(runRoot, "debug", "intent-map.json"), "utf8")).resolves.toContain('"entries"');
     await expect(readFile(path.join(runRoot, "scan.json"), "utf8")).resolves.toContain('"framework_hints"');
     await expect(readFile(path.join(runRoot, "signals.json"), "utf8")).resolves.toContain('"entrypoints"');
     await expect(readFile(path.join(runRoot, "comprehension.json"), "utf8")).resolves.toContain('"graph"');
@@ -43,5 +44,13 @@ describe("CLI pipeline", () => {
     const runRoot = path.join(repoRoot, "work", "runs", result.runId);
 
     await expect(readFile(path.join(runRoot, "outputs", "agent-start.md"), "utf8")).resolves.toContain("# Agent Start");
+  });
+
+  it("does not emit intent-map.json outside debug mode", async () => {
+    const repoRoot = await makeFixtureCopy("node-cli");
+    const result = await runPipeline([repoRoot]);
+    const runRoot = path.join(repoRoot, "work", "runs", result.runId);
+
+    await expect(readFile(path.join(runRoot, "debug", "intent-map.json"), "utf8")).rejects.toThrow();
   });
 });

@@ -212,6 +212,12 @@ export async function runPipeline(argv: readonly string[]): Promise<{
 
   if (input.options.emit_debug_artifacts) {
     outputPaths.push(
+      await writeRunJsonArtifact(
+        input.output_root,
+        input.run_id,
+        "debug/intent-map.json",
+        intentMap,
+      ),
       await writeRunJsonArtifact(input.output_root, input.run_id, "scan.json", scan),
       await writeRunJsonArtifact(input.output_root, input.run_id, "signals.json", signals),
       await writeRunJsonArtifact(
