@@ -37,13 +37,13 @@ function buildManifestHints(
 
     // Manifest is directly inside this directory.
     if (manifestDir === dirPath || manifestDir === `${dirPath}/`) {
-      hints.add(manifest.kind);
+      hints.add(path.posix.basename(manifestDir));
       continue;
     }
 
     // Manifest is somewhere inside this directory tree.
     if (manifest.path.startsWith(`${dirPath}/`)) {
-      hints.add(manifest.kind);
+      hints.add(path.posix.basename(manifestDir));
     }
   }
 
