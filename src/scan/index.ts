@@ -379,6 +379,7 @@ export async function scanRepository(input: RepoInput): Promise<StructureScan> {
     kind: entry.kind,
     role: classifyPathRole(entry),
     size: entry.kind === "file" ? entry.size : 0,
+    mtime: entry.mtimeMs,
   }));
   const fileCount = paths.filter((entry) => entry.kind === "file").length;
   const dirCount = paths.filter((entry) => entry.kind === "directory").length;

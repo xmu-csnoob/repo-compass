@@ -26,6 +26,7 @@ export type WalkEntry = {
   readonly repoRelativePath: string;
   readonly kind: "file" | "directory";
   readonly size: number;
+  readonly mtimeMs: number;
 };
 
 export type WalkDirectoryOptions = {
@@ -158,6 +159,7 @@ export async function walkDirectoryStable(
           repoRelativePath,
           kind: "directory",
           size: 0,
+          mtimeMs: fileStat.mtimeMs,
         });
         continue;
       }
@@ -168,6 +170,7 @@ export async function walkDirectoryStable(
           repoRelativePath,
           kind: "file",
           size: fileStat.size,
+          mtimeMs: fileStat.mtimeMs,
         });
       }
     }

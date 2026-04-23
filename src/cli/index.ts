@@ -221,7 +221,14 @@ export async function runPipeline(argv: readonly string[]): Promise<{
     );
   }
 
-  await saveFreshnessState(input.output_root, buildFreshnessState(input, scan));
+  // Save freshness state after any full rebuild (generated_from === "full").
+  // The degraded status on the current run does not invalidate the state itself —
+  // it just means this particular run is unproven (first run, or repo_root changed).
+  // We must save the state so the next run can become trusted.
+  // Off mode is excluded because it explicitly disclaims trust in its output.
+  if (input.options.freshness_mode !== "off" && freshness.generated_from === "full") {
+    await saveFreshnessState(input.output_root, buildFreshnessState(input, scan));
+  }
 
   return {
     runId: input.run_id,

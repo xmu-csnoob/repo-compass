@@ -108,4 +108,47 @@ describe("agent-start renderer", () => {
     expect(rendered).not.toContain("## Defer For Now");
     expect(rendered).not.toContain("## Key Paths");
   });
+
+  it("renders ## Freshness section when not trimmed due to budget", () => {
+    const minimalContext: ContextIndex = {
+      schema_version: "2.0",
+      repo: {
+        name: "test-repo",
+        root: "/repo",
+        repo_shape: "library",
+        primary_languages: ["Python"],
+        detected_ecosystems: ["python"],
+        framework_hints: [],
+      },
+      meta: {
+        run_id: "run-test",
+        snapshot_id: "run-test",
+        generated_at: "2026-04-22T12:00:00Z",
+        included_paths: [],
+        excluded_paths: [],
+      },
+      artifacts: { manifests: [], commands: [] },
+      graph: { nodes: [], edges: [] },
+      entrypoints: [],
+      first_read_path: [],
+      key_paths: [],
+      critical_paths: [],
+      defer_for_now: [],
+      agent_hints: [],
+      warnings: [],
+      freshness: {
+        mode: "ci",
+        status: "fresh",
+        generated_from: "full",
+        reason: "CI mode performed a trusted full canonical rebuild.",
+      },
+    };
+    const rendered = renderAgentStart(minimalContext);
+
+    expect(rendered).toContain("## Freshness");
+    expect(rendered).toContain("Mode: ci");
+    expect(rendered).toContain("Status: fresh");
+    expect(rendered).toContain("Generated from: full");
+    expect(rendered).toContain("CI mode performed a trusted full canonical rebuild.");
+  });
 });
