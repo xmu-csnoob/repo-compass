@@ -89,6 +89,8 @@ const SOURCE_DIR_NAMES = new Set([
   "source",
   "package",
   "packages",
+  "app",
+  "lib",
 ]);
 
 /**
