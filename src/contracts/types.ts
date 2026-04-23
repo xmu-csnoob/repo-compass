@@ -8,10 +8,13 @@ import {
   criticalPathSchema,
   deferCandidateSchema,
   deferForNowItemSchema,
+  directoryIntentEntrySchema,
+  directoryIntentSchema,
   entrypointSchema,
   firstReadPathItemSchema,
   graphEdgeSchema,
   graphNodeSchema,
+  intentMapSchema,
   keyPathSchema,
   manifestSchema,
   metaSchema,
@@ -43,3 +46,21 @@ export type DeferForNowItem = z.infer<typeof deferForNowItemSchema>;
 export type AgentHint = z.infer<typeof agentHintSchema>;
 export type Comprehension = z.infer<typeof comprehensionSchema>;
 export type ContextIndex = z.infer<typeof contextIndexSchema>;
+export type DirectoryIntent = z.infer<typeof directoryIntentSchema>;
+export type DirectoryIntentEntry = z.infer<typeof directoryIntentEntrySchema>;
+export type IntentMap = z.infer<typeof intentMapSchema>;
+export type DirectoryDepth = 1 | 2;
+export type DirectoryClassifierMethod = "static" | "llm";
+
+export interface DirectoryEvidence {
+  path: string;
+  depth: DirectoryDepth;
+  children: string[];
+  manifest_hints: string[];
+  parent_intent?: DirectoryIntent;
+}
+
+export interface DirectoryClassifier {
+  readonly method: DirectoryClassifierMethod;
+  classify(dir: DirectoryEvidence): Promise<DirectoryIntentEntry>;
+}
