@@ -137,19 +137,36 @@ flowchart TD
 Owner: `Codex`  
 Milestone: `M0`
 
-- [ ] `0.1` Confirm frozen whitepaper is the sole Phase 3 design source
-- [ ] `0.2` Freeze:
-  - [ ] `DIRECTORY_INTENTS`
-  - [ ] `IntentMap` contract
-  - [ ] `DirectoryEvidence` shape
-  - [ ] `DirectoryClassifier` interface
-  - [ ] suppression-first policy for Python fixture surfaces
-- [ ] `0.3` Freeze work partition so later parallel tasks do not overlap
+- [x] `0.1` Confirm frozen whitepaper is the sole Phase 3 design source
+- [x] `0.2` Freeze:
+  - [x] `DIRECTORY_INTENTS`
+  - [x] `IntentMap` contract
+  - [x] `DirectoryEvidence` shape
+  - [x] `DirectoryClassifier` interface
+  - [x] suppression-first policy for Python fixture surfaces
+- [x] `0.3` Freeze work partition so later parallel tasks do not overlap
 
 Write scope:
 
 - `docs/phase3/`
 - `docs/phase3/execution/kanban.md`
+
+Wave 0 freeze notes:
+
+- the sole authoritative Phase 3 design source remains:
+  - `docs/phase3/foundation.md`
+  - `docs/phase3/contracts.md`
+  - `docs/phase3/artifact-spec.md`
+  - `docs/phase3/repo-structure.md`
+- Wave 0 freezes the Stage B' typed seam in `docs/phase3/contracts.md`
+- Wave 0 also freezes module ownership so parallel implementation stays
+  non-overlapping:
+  - `Codex`: `docs/phase3/`, `src/contracts/`, `src/cli/`, `src/extract/`,
+    minimal export wiring in `src/index.ts`, and final integration
+  - `Kimi`: `src/classify/`
+  - `Minimax`: `tests/classify/`
+- any change that crosses those write scopes or redefines the frozen interface
+  requires an explicit update to the frozen design pack first
 
 ## Backlog
 

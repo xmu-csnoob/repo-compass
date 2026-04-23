@@ -151,27 +151,19 @@ Intent classification should be added through:
 - `src/classify/rules.ts` for declarative rule definitions
 - optional future LLM adapter behind the same interface
 
+Wave 0 freeze:
+
+- the typed classifier seam is defined by `docs/phase3/contracts.md`
+- `DirectoryEvidence` and `DirectoryClassifier` names are frozen for parallel
+  implementation work
+- `src/classify/` may change internal helper structure later, but it must not
+  redefine the frozen interface without updating the Phase 3 design pack
+
 It should not require:
 
 - a second extraction pipeline
 - renderer-side intent inference
 - a replacement for `StructureScan`
-
-Recommended classifier interface:
-
-```ts
-interface DirectoryEvidence {
-  path: string;
-  children: string[];
-  manifest_hints: string[];
-  parent_intent?: DirectoryIntent["intent"];
-}
-
-interface DirectoryClassifier {
-  classify(dir: DirectoryEvidence): Promise<DirectoryIntent>;
-  readonly method: "static" | "llm";
-}
-```
 
 Phase 3 expectation:
 
@@ -195,10 +187,12 @@ consumption logic.
 
 - resolve file intent from classified ancestors
 - decide whether certain local signals should be promoted
+- preserve Phase 2 behavior when intent lookup returns `unknown`
 
 `extract/` should not:
 
 - reinvent directory-purpose classification from scratch
+- suppress non-target surfaces by hidden repo-specific path exceptions
 
 ### 6.3 Artifact Placement
 
