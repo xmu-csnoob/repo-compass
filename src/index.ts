@@ -1,6 +1,7 @@
 export * from "./contracts/index.js";
 export * from "./input/index.js";
 export * from "./scan/index.js";
+export * from "./classify/index.js";
 export * from "./extract/index.js";
 export * from "./comprehend/index.js";
 export * from "./render/index.js";
