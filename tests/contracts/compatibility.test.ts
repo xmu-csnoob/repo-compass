@@ -4,6 +4,8 @@ import {
   AGENT_HINT_KINDS,
   GRAPH_EDGE_KINDS,
   MANIFEST_KINDS,
+  DIRECTORY_INTENTS,
+  intentMapSchema,
   contextIndexSchema,
   validateContract,
 } from "../../src/contracts/index.js";
@@ -84,5 +86,32 @@ describe("phase 2 compatibility", () => {
     expect(AGENT_HINT_KINDS).toEqual(
       expect.arrayContaining(["setup", "run", "test", "safe-edit-zone", "watch-out"]),
     );
+  });
+
+  it("keeps the phase 3 intent artifact on schema version 2.0", () => {
+    const validated = validateContract(
+      intentMapSchema,
+      {
+        schema_version: "2.0",
+        run_id: "run-001",
+        entries: [],
+      },
+      "intentMap",
+    );
+
+    expect(validated.schema_version).toBe("2.0");
+  });
+
+  it("freezes the phase 3 directory-intent enum set", () => {
+    expect(DIRECTORY_INTENTS).toEqual([
+      "core-source",
+      "library-surface",
+      "example-fixtures",
+      "test-infrastructure",
+      "tooling",
+      "docs",
+      "config",
+      "unknown",
+    ]);
   });
 });

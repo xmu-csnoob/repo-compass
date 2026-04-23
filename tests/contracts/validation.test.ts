@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   comprehensionSchema,
   contextIndexSchema,
+  directoryIntentSchema,
+  intentMapSchema,
   repoInputSchema,
   signalExtractionSchema,
   structureScanSchema,
 } from "../../src/contracts/index.js";
 import { ContractValidationError, validateContract } from "../../src/contracts/validate.js";
+import type { DirectoryClassifier, DirectoryEvidence } from "../../src/contracts/index.js";
 
 // ---------------------------------------------------------------------------
 // Helper: ISO datetime string for meta.generated_at
@@ -317,6 +320,126 @@ describe("comprehensionSchema", () => {
     expect(() =>
       validateContract(comprehensionSchema, invalid, "comprehension"),
     ).toThrow(ContractValidationError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// phase 3 directory-intent contracts
+// ---------------------------------------------------------------------------
+describe("directoryIntentSchema", () => {
+  it("parses frozen directory-intent enum values", () => {
+    expect(validateContract(directoryIntentSchema, "core-source", "directoryIntent")).toBe("core-source");
+    expect(validateContract(directoryIntentSchema, "test-infrastructure", "directoryIntent")).toBe("test-infrastructure");
+  });
+
+  it("throws on unsupported directory intent values", () => {
+    expect(() => validateContract(directoryIntentSchema, "examples", "directoryIntent")).toThrow(
+      ContractValidationError,
+    );
+  });
+});
+
+describe("intentMapSchema", () => {
+  const minimalValid = {
+    schema_version: "2.0",
+    run_id: "run-001",
+    entries: [
+      {
+        path: "src",
+        depth: 1,
+        intent: "core-source",
+        confidence: "high",
+        reason: "Contains the main source tree.",
+        method: "static",
+      },
+    ],
+  };
+
+  it("parses a minimal valid intent map", () => {
+    expect(validateContract(intentMapSchema, minimalValid, "intentMap")).toMatchObject(minimalValid);
+  });
+
+  it("throws when entry depth is outside the frozen phase 3 bound", () => {
+    const invalid = {
+      ...minimalValid,
+      entries: [{ ...minimalValid.entries[0], depth: 3 }],
+    };
+
+    expect(() => validateContract(intentMapSchema, invalid, "intentMap")).toThrow(ContractValidationError);
+  });
+
+  it("throws when classifier method is unsupported", () => {
+    const invalid = {
+      ...minimalValid,
+      entries: [{ ...minimalValid.entries[0], method: "heuristic" }],
+    };
+
+    expect(() => validateContract(intentMapSchema, invalid, "intentMap")).toThrow(ContractValidationError);
+  });
+
+  it("throws when an intent entry materializes the repository root", () => {
+    const invalid = {
+      ...minimalValid,
+      entries: [{ ...minimalValid.entries[0], path: "." }],
+    };
+
+    expect(() => validateContract(intentMapSchema, invalid, "intentMap")).toThrow(ContractValidationError);
+  });
+
+  it("throws when multiple entries classify the same path", () => {
+    const invalid = {
+      ...minimalValid,
+      entries: [
+        minimalValid.entries[0],
+        { ...minimalValid.entries[0], intent: "docs", reason: "Conflicting duplicate entry." },
+      ],
+    };
+
+    expect(() => validateContract(intentMapSchema, invalid, "intentMap")).toThrow(ContractValidationError);
+  });
+});
+
+describe("DirectoryClassifier interface", () => {
+  it("supports the frozen typed classifier seam", async () => {
+    const validEvidence: DirectoryEvidence = {
+      path: "tests",
+      depth: 1,
+      children: ["fixtures", "contracts"],
+      manifest_hints: ["pyproject", "requirements"],
+    };
+
+    const invalidEvidence: DirectoryEvidence = {
+      path: "tests",
+      depth: 1,
+      children: ["fixtures"],
+      // @ts-expect-error manifest hints are bounded to known manifest kinds
+      manifest_hints: ["bogus-manifest"],
+    };
+
+    expect(validEvidence.manifest_hints).toEqual(["pyproject", "requirements"]);
+    expect(invalidEvidence).toBeDefined();
+
+    const classifier: DirectoryClassifier = {
+      method: "static",
+      async classify(dir: DirectoryEvidence) {
+        return {
+          path: dir.path,
+          depth: dir.depth,
+          intent: dir.parent_intent ?? "unknown",
+          confidence: "medium",
+          reason: "Type-level seam smoke test.",
+          method: this.method,
+        };
+      },
+    };
+
+    await expect(
+      classifier.classify(validEvidence),
+    ).resolves.toMatchObject({
+      path: "tests",
+      depth: 1,
+      method: "static",
+    });
   });
 });
 

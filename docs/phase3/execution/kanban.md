@@ -176,15 +176,15 @@ Owner: `Codex`
 Milestone: `M1`  
 Depends on: `0.2`
 
-- [ ] `1.1` Add directory intent enums
-- [ ] `1.2` Add `directoryIntent` schema
-- [ ] `1.3` Add `intentMap` schema
-- [ ] `1.4` Add types for:
-  - [ ] `DirectoryIntent`
-  - [ ] `IntentMap`
-  - [ ] `DirectoryEvidence`
-  - [ ] `DirectoryClassifier`
-- [ ] `1.5` Keep artifact family version semantics aligned with current `2.0`
+- [x] `1.1` Add directory intent enums
+- [x] `1.2` Add `directoryIntent` schema
+- [x] `1.3` Add `intentMap` schema
+- [x] `1.4` Add types for:
+  - [x] `DirectoryIntent`
+  - [x] `IntentMap`
+  - [x] `DirectoryEvidence`
+  - [x] `DirectoryClassifier`
+- [x] `1.5` Keep artifact family version semantics aligned with current `2.0`
 
 Primary write scope:
 

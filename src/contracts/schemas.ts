@@ -2,7 +2,9 @@ import { z } from "zod";
 
 import {
   AGENT_HINT_KINDS,
+  CLASSIFIER_METHODS,
   CONFIDENCE_LEVELS,
+  DIRECTORY_INTENTS,
   ENTRYPOINT_KINDS,
   FRESHNESS_GENERATED_FROM,
   FRESHNESS_MODES,
@@ -23,6 +25,11 @@ const evidenceSchema = z.array(z.string().min(1)).min(1);
 const freshnessModeSchema = z.enum(FRESHNESS_MODES);
 const freshnessStatusSchema = z.enum(FRESHNESS_STATUSES);
 const freshnessGeneratedFromSchema = z.enum(FRESHNESS_GENERATED_FROM);
+const directoryDepthSchema = z.union([z.literal(1), z.literal(2)]);
+const classifierMethodSchema = z.enum(CLASSIFIER_METHODS);
+const classifiedDirectoryPathSchema = repoRelativePath.refine((value) => value !== ".", {
+  message: "repository root cannot be materialized as a directory intent entry",
+});
 
 export const repoInputSchema = z.object({
   schema_version: schemaVersion,
@@ -231,10 +238,44 @@ export const contextIndexSchema = comprehensionSchema
   .omit({ run_id: true })
   .strict();
 
+export const directoryIntentSchema = z.enum(DIRECTORY_INTENTS);
+
+export const directoryIntentEntrySchema = z.object({
+  path: classifiedDirectoryPathSchema,
+  depth: directoryDepthSchema,
+  intent: directoryIntentSchema,
+  confidence: confidenceLevelSchema,
+  reason: z.string().min(1),
+  method: classifierMethodSchema,
+}).strict();
+
+export const intentMapSchema = z.object({
+  schema_version: schemaVersion,
+  run_id: z.string().min(1),
+  entries: z.array(directoryIntentEntrySchema).superRefine((entries, ctx) => {
+    const seenPaths = new Set<string>();
+
+    for (const [index, entry] of entries.entries()) {
+      if (seenPaths.has(entry.path)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [index, "path"],
+          message: `duplicate directory intent entry path "${entry.path}"`,
+        });
+        continue;
+      }
+
+      seenPaths.add(entry.path);
+    }
+  }),
+}).strict();
+
 export const contracts = {
   repoInputSchema,
   structureScanSchema,
   signalExtractionSchema,
   comprehensionSchema,
   contextIndexSchema,
+  directoryIntentSchema,
+  intentMapSchema,
 } as const;

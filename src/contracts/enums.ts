@@ -95,3 +95,16 @@ export const FRESHNESS_STATUSES = [
 ] as const;
 
 export const FRESHNESS_GENERATED_FROM = ["full", "incremental"] as const;
+
+export const DIRECTORY_INTENTS = [
+  "core-source",
+  "library-surface",
+  "example-fixtures",
+  "test-infrastructure",
+  "tooling",
+  "docs",
+  "config",
+  "unknown",
+] as const;
+
+export const CLASSIFIER_METHODS = ["static", "llm"] as const;
