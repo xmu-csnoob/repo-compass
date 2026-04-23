@@ -450,21 +450,18 @@ describe("extractSignals - Python entrypoint suppression", () => {
 // Real fixture integration tests (Epic 5.2 / 5.3)
 // ---------------------------------------------------------------------------
 
-async function makeFixtureCopy(name: string): Promise<{ path: string; cleanup: () => Promise<void> }> {
+async function makeFixtureCopy(name: string): Promise<string> {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), `repo-compass-extract-fixture-`));
   const source = path.resolve(path.join(__dirname, "..", "fixtures"), name);
   const dest = path.join(tempDir, name);
   await cp(source, dest, { recursive: true });
-  const cleanup = async () => {
-    await rm(tempDir, { recursive: true, force: true });
-  };
-  return { path: dest, cleanup };
+  temporaryDirectories.push(tempDir);
+  return dest;
 }
 
 describe("extractSignals - real fixture validation (Epic 5.2)", () => {
   it("python-fastapi: app/main.py is detected as server entrypoint", async () => {
-    const { path: repoRoot, cleanup } = await makeFixtureCopy("python-fastapi");
-    temporaryDirectories.push(repoRoot);
+    const repoRoot = await makeFixtureCopy("python-fastapi");
 
     const input = normalizeRepoInput({
       schema_version: "2.0",
@@ -483,8 +480,7 @@ describe("extractSignals - real fixture validation (Epic 5.2)", () => {
   });
 
   it("python-fastapi: tests/ directory Python files are not surfaced as entrypoints", async () => {
-    const { path: repoRoot, cleanup } = await makeFixtureCopy("python-fastapi");
-    temporaryDirectories.push(repoRoot);
+    const repoRoot = await makeFixtureCopy("python-fastapi");
 
     const input = normalizeRepoInput({
       schema_version: "2.0",
@@ -504,8 +500,7 @@ describe("extractSignals - real fixture validation (Epic 5.2)", () => {
 
 describe("extractSignals - structurally different fixture (Epic 5.3)", () => {
   it("python-flask: app.py is detected as server entrypoint", async () => {
-    const { path: repoRoot, cleanup } = await makeFixtureCopy("python-flask");
-    temporaryDirectories.push(repoRoot);
+    const repoRoot = await makeFixtureCopy("python-flask");
 
     const input = normalizeRepoInput({
       schema_version: "2.0",
@@ -524,8 +519,7 @@ describe("extractSignals - structurally different fixture (Epic 5.3)", () => {
   });
 
   it("python-flask: tests/ directory is not surfaced as entrypoints", async () => {
-    const { path: repoRoot, cleanup } = await makeFixtureCopy("python-flask");
-    temporaryDirectories.push(repoRoot);
+    const repoRoot = await makeFixtureCopy("python-flask");
 
     const input = normalizeRepoInput({
       schema_version: "2.0",
