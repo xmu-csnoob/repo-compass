@@ -53,6 +53,16 @@ Rules:
 - do not implement around ambiguity by inventing new behavior without updating
   the frozen documents first
 
+Execution planning companion:
+
+- `docs/phase3/execution/kanban.md`
+
+Rule:
+
+- the Kanban is an execution plan derived from the frozen planning set
+- if the Kanban conflicts with the frozen planning set, the frozen planning set
+  wins
+
 ## 4. Implementation Priorities
 
 Phase 3 work should stay aligned with the intent-layer goal:
