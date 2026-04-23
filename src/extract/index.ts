@@ -892,15 +892,6 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
       });
     }
 
-    if (frameworkHint === "fastapi" && knownFilePaths.has("src/mixed_repo/api.py")) {
-      maybeAddPriorityCandidate(priorityCandidates, {
-        path: "src/mixed_repo/api.py",
-        signal: "workflow-core",
-        reason: "FastAPI backend routes and application bootstrap are defined here.",
-        confidence: "high",
-        evidence: ["fastapi"],
-      });
-    }
 
     if (frameworkHint === "flask" && knownFilePaths.has("app.py")) {
       maybeAddPriorityCandidate(priorityCandidates, {

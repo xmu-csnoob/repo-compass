@@ -19,7 +19,7 @@ test commands and the recommendation below.
 Observed results on `2026-04-23`:
 
 - build passed
-- mainline suite passed: `18` files, `138` tests
+- mainline suite passed: `17` files, `136` tests
 - targeted Phase 2 verification passed: `6` files, `61` tests
 
 ### Fixture Audit Run
