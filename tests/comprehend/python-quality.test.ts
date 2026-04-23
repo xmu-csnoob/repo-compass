@@ -110,4 +110,19 @@ describe("python comprehension quality", () => {
 
     expect(keyPathSet.has("manage.py")).toBe(true);
   });
+
+  it("mixed-python-js: detects both Python and JavaScript/TypeScript ecosystems", async () => {
+    const { comprehension } = await runFullPipeline("mixed-python-js");
+
+    expect(comprehension.repo.detected_ecosystems).toContain("python");
+    expect(comprehension.repo.detected_ecosystems).toContain("node");
+  });
+
+  it("mixed-python-js: key_paths include both pyproject.toml and package.json manifests", async () => {
+    const { comprehension } = await runFullPipeline("mixed-python-js");
+    const keyPaths = comprehension.key_paths.map((k) => k.path);
+
+    expect(keyPaths).toContain("pyproject.toml");
+    expect(keyPaths).toContain("package.json");
+  });
 });

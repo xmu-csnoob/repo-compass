@@ -32,17 +32,26 @@ export const repoInputSchema = z.object({
   include: z.array(z.string()).default([]),
   exclude: z.array(z.string()).default([]),
   max_files: z.number().int().positive().default(50_000),
-  options: z
-    .object({
+  options: z.preprocess((val) => {
+    if (val === null || val === undefined) return {};
+    return val;
+  }, z.custom(
+    (val) =>
+      typeof val === "object" &&
+      val !== null &&
+      !Array.isArray(val) &&
+      Object.prototype.toString.call(val) === "[object Object]",
+    { message: "options must be a plain object" },
+  ).pipe(
+    z.object({
       follow_symlinks: z.boolean().default(false),
       detect_frameworks: z.boolean().default(true),
       extract_import_graph: z.boolean().default(true),
       emit_debug_artifacts: z.boolean().default(false),
       emit_agent_start: z.boolean().default(true),
       freshness_mode: freshnessModeSchema.default("off"),
-    })
-    .optional()
-    .default({}),
+    }),
+  )),
 }).strict();
 
 export const manifestSchema = z.object({
@@ -55,6 +64,7 @@ export const structurePathSchema = z.object({
   kind: z.enum(["file", "directory"]),
   role: z.enum(PATH_ROLES),
   size: z.number().int().nonnegative(),
+  mtime: z.number().optional(),
 });
 
 export const structureScanSchema = z.object({

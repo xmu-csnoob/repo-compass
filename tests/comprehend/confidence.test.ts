@@ -78,7 +78,7 @@ describe("confidence rules (7.5)", () => {
 
     for (const hint of comprehension.agent_hints) {
       expect(hint.evidence).toBeDefined();
-      expect(hint.evidence.length).toBeGreaterThan(0);
+      expect(hint.evidence!.length).toBeGreaterThan(0);
     }
   });
 

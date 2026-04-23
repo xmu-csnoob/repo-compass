@@ -1,6 +1,10 @@
 import path from "node:path";
 
-import { repoInputSchema, validateContract } from "../contracts/index.js";
+import {
+  ContractValidationError,
+  repoInputSchema,
+  validateContract,
+} from "../contracts/index.js";
 
 import type { RepoInput } from "../contracts/index.js";
 
@@ -17,14 +21,41 @@ export function normalizeRepoInput(input: unknown): RepoInput {
   }
 
   const candidate = input as Record<string, unknown>;
-  const rawOptions =
-    typeof candidate.options === "object" && candidate.options !== null
+  // Fail fast for non-object options — arrays and primitives are invalid.
+  // null is allowed (signals "use defaults"), and undefined means the field
+  // was not provided at all (also falls through to schema defaults).
+  // Exotic objects (Date, Map, URLSearchParams, etc.) are passed to schema
+  // validation where they are rejected by the plain-object check.
+  const opts = candidate.options;
+  const isObjectType =
+    typeof opts === "object" && opts !== null && !Array.isArray(opts);
+
+  if (opts !== undefined && opts !== null && !isObjectType) {
+    throw new ContractValidationError(
+      "options must be an object when provided",
+      ["options"],
+    );
+  }
+
+  // Verify genuine plain object before spreading.
+  // Shape-based check: objects whose string representation is [object Object]
+  // are plain data objects (regardless of prototype). Objects from other realms,
+  // class instances with custom toStringTag, and exotic objects (Date, Map, etc.)
+  // have different tags and are passed through to schema for rejection.
+  const toStringTag = Object.prototype.toString.call(opts);
+  const isPlainObject = toStringTag === "[object Object]";
+
+  // For null/undefined/primitives: use {}. For plain objects: safely copy own
+  // enumerable string-keyed properties. For exotic/class-instance objects:
+  // pass through to schema for rejection.
+  const rawOptions: Record<string, unknown> =
+    isObjectType && isPlainObject
       ? { ...(candidate.options as Record<string, unknown>) }
-      : candidate.options;
+      : isObjectType
+        ? (opts as Record<string, unknown>)
+        : {};
 
   if (
-    typeof rawOptions === "object" &&
-    rawOptions !== null &&
     rawOptions.emit_agent_start === undefined &&
     typeof rawOptions.emit_agent_views === "boolean"
   ) {
