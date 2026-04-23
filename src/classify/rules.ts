@@ -203,6 +203,12 @@ const STATIC_RULES: readonly ClassifyRule[] = [
   },
 ];
 
+// Pre-sort rules once at module initialization so evaluation is O(n)
+// rather than O(n log n) per call.
+const SORTED_RULES: readonly ClassifyRule[] = [...STATIC_RULES].sort(
+  (a, b) => b.priority - a.priority,
+);
+
 /**
  * Evaluate static rules against directory evidence and return the best match.
  *
@@ -214,11 +220,7 @@ const STATIC_RULES: readonly ClassifyRule[] = [
 export function evaluateRules(
   evidence: DirectoryEvidence,
 ): Omit<DirectoryIntentEntry, "path" | "depth"> | undefined {
-  // Sort by priority descending; stable sort preserves declaration order
-  // for equal priorities, giving a deterministic tie-breaker.
-  const sorted = [...STATIC_RULES].sort((a, b) => b.priority - a.priority);
-
-  for (const rule of sorted) {
+  for (const rule of SORTED_RULES) {
     if (!rule.match(evidence)) {
       continue;
     }

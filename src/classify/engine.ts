@@ -20,10 +20,11 @@ import type {
  * Root has depth 0, root-level children depth 1, grandchildren depth 2, etc.
  */
 function computeDepth(repoRelativePath: string): number {
-  if (repoRelativePath === "" || repoRelativePath === ".") {
+  const normalized = repoRelativePath.replace(/^\.\//, "");
+  if (normalized === "" || normalized === ".") {
     return 0;
   }
-  return repoRelativePath.split("/").length;
+  return normalized.split("/").length;
 }
 
 /**
@@ -37,12 +38,13 @@ function buildManifestHints(
   scan: StructureScan,
 ): string[] {
   const hints = new Set<string>();
+  const normalizedDir = path.posix.normalize(dirPath);
 
   for (const manifest of scan.detected.manifests) {
-    const manifestDir = path.posix.dirname(manifest.path);
+    const manifestDir = path.posix.normalize(path.posix.dirname(manifest.path));
 
     // Only count manifests that are directly inside this directory.
-    if (manifestDir === dirPath || manifestDir === `${dirPath}/`) {
+    if (manifestDir === normalizedDir) {
       hints.add(manifest.kind);
     }
   }
@@ -91,7 +93,7 @@ function findParentIntent(
 ): DirectoryIntent | undefined {
   let current = dirPath;
 
-  while (current.includes("/")) {
+  while (current !== "." && current !== "") {
     current = path.posix.dirname(current);
 
     if (current === "." || current === "") {
@@ -196,13 +198,9 @@ export async function buildIntentMap(
 
   for (const dir of directories) {
     const rawDepth = computeDepth(dir.path);
-    if (rawDepth !== 1 && rawDepth !== 2) {
-      throw new Error(
-        `Unexpected directory depth ${rawDepth} for ${dir.path}; ` +
-          "only depths 1 and 2 are supported.",
-      );
-    }
-    const depth: 1 | 2 = rawDepth;
+    // The filter above guarantees rawDepth is 1 or 2; this assertion
+    // is a type-narrowing device for TypeScript, not a runtime check.
+    const depth: 1 | 2 = rawDepth as 1 | 2;
     const children = buildChildren(dir.path, scan);
     const manifestHints = buildManifestHints(dir.path, scan);
     const parentIntent = findParentIntent(dir.path, classified);
@@ -249,9 +247,7 @@ export function createFileResolver(
   return (filePath: string): DirectoryIntent => {
     let current = filePath;
 
-    while (current.includes("/")) {
-      current = path.posix.dirname(current);
-
+    do {
       if (current === "." || current === "") {
         break;
       }
@@ -261,7 +257,9 @@ export function createFileResolver(
       if (entry) {
         return entry.intent;
       }
-    }
+
+      current = path.posix.dirname(current);
+    } while (current !== "." && current !== "");
 
     return "unknown";
   };
