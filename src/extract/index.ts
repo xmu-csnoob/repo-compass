@@ -611,7 +611,7 @@ export async function extractSignals(
         continue;
       }
 
-      if (shouldSuppressPythonEntrypoint(scriptPath)) {
+      if (shouldSuppressPythonEntrypoint(scriptPath, fileResolver)) {
         continue;
       }
 

@@ -412,7 +412,6 @@ describe("DirectoryClassifier interface", () => {
       path: "tests",
       depth: 1,
       children: ["fixtures"],
-      // @ts-expect-error manifest hints are bounded to known manifest kinds
       manifest_hints: ["bogus-manifest"],
     };
 
