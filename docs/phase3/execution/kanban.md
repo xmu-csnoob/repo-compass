@@ -313,9 +313,9 @@ Owner: `Kimi`
 Milestone: `M3`  
 Depends on: `1.3`, `3.1`
 
-- [ ] `6.1` Emit `intent-map.json` only in debug or equivalent developer mode
-- [ ] `6.2` Write it under `work/runs/<run-id>/debug/`
-- [ ] `6.3` Keep canonical user-facing artifacts unchanged
+- [x] `6.1` Emit `intent-map.json` only in debug or equivalent developer mode
+- [x] `6.2` Write it under `work/runs/<run-id>/debug/`
+- [x] `6.3` Keep canonical user-facing artifacts unchanged
 
 Primary write scope:
 
