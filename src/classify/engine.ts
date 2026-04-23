@@ -12,6 +12,7 @@ import type {
   DirectoryIntent,
   DirectoryIntentEntry,
   IntentMap,
+  ManifestKind,
   StructureScan,
 } from "../contracts/index.js";
 
@@ -36,8 +37,8 @@ function computeDepth(repoRelativePath: string): number {
 function buildManifestHints(
   dirPath: string,
   scan: StructureScan,
-): string[] {
-  const hints = new Set<string>();
+): ManifestKind[] {
+  const hints = new Set<ManifestKind>();
   const normalizedDir = path.posix.normalize(dirPath);
 
   for (const manifest of scan.detected.manifests) {
