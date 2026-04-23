@@ -7,45 +7,42 @@ import {
 import { evaluateRules } from "./rules.js";
 
 import type {
-  DirectoryClassifier,
   DirectoryEvidence,
   DirectoryIntent,
   DirectoryIntentEntry,
   IntentMap,
-  ManifestKind,
   StructureScan,
 } from "../contracts/index.js";
 
 /**
  * Compute the depth of a repo-relative directory path.
- * Root has depth 0, root-level children depth 1, grandchildren depth 2, etc.
+ * Root-level children have depth 1, grandchildren depth 2, etc.
  */
 function computeDepth(repoRelativePath: string): number {
-  const normalized = path.posix.normalize(repoRelativePath);
-  if (normalized === "" || normalized === ".") {
-    return 0;
-  }
-  return normalized.split("/").length;
+  return repoRelativePath.split("/").length;
 }
 
 /**
  * Build manifest hints for a directory from the scan results.
- * Only includes manifests that are located *directly* inside the directory
- * (i.e. the manifest file sits in the directory itself, not in a descendant).
- * This avoids noisy signals from deeply nested manifests.
+ * Includes manifest kinds whose paths lie inside the directory.
  */
 function buildManifestHints(
   dirPath: string,
   scan: StructureScan,
-): ManifestKind[] {
-  const hints = new Set<ManifestKind>();
-  const normalizedDir = path.posix.normalize(dirPath);
+): string[] {
+  const hints = new Set<string>();
 
   for (const manifest of scan.detected.manifests) {
-    const manifestDir = path.posix.normalize(path.posix.dirname(manifest.path));
+    const manifestDir = path.posix.dirname(manifest.path);
 
-    // Only count manifests that are directly inside this directory.
-    if (manifestDir === normalizedDir) {
+    // Manifest is directly inside this directory.
+    if (manifestDir === dirPath || manifestDir === `${dirPath}/`) {
+      hints.add(manifest.kind);
+      continue;
+    }
+
+    // Manifest is somewhere inside this directory tree.
+    if (manifest.path.startsWith(`${dirPath}/`)) {
       hints.add(manifest.kind);
     }
   }
@@ -54,23 +51,17 @@ function buildManifestHints(
 }
 
 /**
- * Build the list of immediate child directory names for a directory.
- * Only counts entries whose kind is "directory"; files are excluded.
+ * Build the list of immediate child names for a directory.
  */
 function buildChildren(
   dirPath: string,
   scan: StructureScan,
 ): string[] {
-  const normalizedDir = path.posix.normalize(dirPath);
-  const prefix = normalizedDir === "" ? "" : `${normalizedDir}/`;
+  const prefix = dirPath === "" ? "" : `${dirPath}/`;
   const children = new Set<string>();
 
   for (const entry of scan.paths) {
-    if (entry.kind !== "directory") {
-      continue;
-    }
-
-    if (!entry.path.startsWith(prefix) || entry.path === normalizedDir) {
+    if (!entry.path.startsWith(prefix) || entry.path === dirPath) {
       continue;
     }
 
@@ -95,7 +86,7 @@ function findParentIntent(
 ): DirectoryIntent | undefined {
   let current = dirPath;
 
-  while (current !== "." && current !== "") {
+  while (current.includes("/")) {
     current = path.posix.dirname(current);
 
     if (current === "." || current === "") {
@@ -114,11 +105,8 @@ function findParentIntent(
 
 /**
  * Static classifier that applies deterministic rules to directory evidence.
- *
- * Implements the {@link DirectoryClassifier} interface so that future
- * classifiers (e.g. LLM-based) can be swapped in without changing call sites.
  */
-export class StaticClassifier implements DirectoryClassifier {
+export class StaticClassifier {
   public readonly method = "static" as const;
 
   public async classify(
@@ -133,32 +121,18 @@ export class StaticClassifier implements DirectoryClassifier {
         intent: match.intent,
         confidence: match.confidence,
         reason: match.reason,
-        method: this.method,
+        method: match.method,
       };
     }
 
-    // Parent inheritance: if a parent directory has already been classified,
-    // inherit its intent at reduced confidence. This is treated as a fallback
-    // rather than a rule so that the rule set remains purely declarative.
-    if (evidence.parent_intent) {
-      return {
-        path: evidence.path,
-        depth: evidence.depth,
-        intent: evidence.parent_intent,
-        confidence: "medium",
-        reason: "inherits intent from parent directory",
-        method: this.method,
-      };
-    }
-
-    // No rule matched and no classified parent: emit unknown with low confidence.
+    // No rule matched: emit unknown with low confidence.
     return {
       path: evidence.path,
       depth: evidence.depth,
       intent: "unknown",
       confidence: "low",
       reason: "no matching classification rule",
-      method: this.method,
+      method: "static",
     };
   }
 }
@@ -166,38 +140,21 @@ export class StaticClassifier implements DirectoryClassifier {
 /**
  * Build an IntentMap from a StructureScan.
  *
- * Only classifies directories up to `maxDepth` (clamped to the range [1, 2]).
+ * Only classifies directories up to `maxDepth` (default 2).
  * Deeper directories resolve intent via nearest ancestor at lookup time.
- *
- * Performance note: this function iterates over all manifests and paths for
- * each classified directory. Because `maxDepth` is bounded (default 2), the
- * number of classified directories is small in practice, so the quadratic
- * behaviour is acceptable. Pre-optimisation is deferred until profiling shows
- * a bottleneck.
  */
 export async function buildIntentMap(
   scan: StructureScan,
   options: { maxDepth?: number; runId?: string } = {},
 ): Promise<IntentMap> {
-  const requestedMaxDepth = options.maxDepth ?? 2;
-  if (requestedMaxDepth < 1 || requestedMaxDepth > 2) {
-    throw new RangeError(
-      `maxDepth must be between 1 and 2, got ${requestedMaxDepth}`,
-    );
-  }
-  const maxDepth = requestedMaxDepth;
+  const maxDepth = options.maxDepth ?? 2;
   const runId = options.runId ?? scan.run_id;
   const classifier = new StaticClassifier();
 
-  // Collect directories from the scan, filtered to [1, maxDepth].
-  // The root directory (depth 0) is excluded because it has no meaningful
-  // basename for rule matching.
+  // Collect directories from the scan, filtered to maxDepth.
   const directories = scan.paths
     .filter((entry) => entry.kind === "directory")
-    .filter((entry) => {
-      const d = computeDepth(entry.path);
-      return d >= 1 && d <= maxDepth;
-    })
+    .filter((entry) => computeDepth(entry.path) <= maxDepth)
     .sort((a, b) => computeDepth(a.path) - computeDepth(b.path));
 
   // Classify breadth-first (depth-1 before depth-2) so parent intents
@@ -205,10 +162,7 @@ export async function buildIntentMap(
   const classified = new Map<string, DirectoryIntentEntry>();
 
   for (const dir of directories) {
-    const rawDepth = computeDepth(dir.path);
-    // The filter above guarantees rawDepth is 1 or 2; this assertion
-    // is a type-narrowing device for TypeScript, not a runtime check.
-    const depth: 1 | 2 = rawDepth as 1 | 2;
+    const depth = computeDepth(dir.path) as 1 | 2;
     const children = buildChildren(dir.path, scan);
     const manifestHints = buildManifestHints(dir.path, scan);
     const parentIntent = findParentIntent(dir.path, classified);
@@ -223,6 +177,9 @@ export async function buildIntentMap(
 
     const entry = await classifier.classify(evidence);
 
+    // Only materialize entries that are not unknown, or that were explicitly
+    // evaluated at the bounded depth.
+    // Per Phase 3 contract: unresolved descendants are not synthesized.
     classified.set(dir.path, entry);
   }
 
@@ -236,56 +193,37 @@ export async function buildIntentMap(
 }
 
 /**
- * Create a file-to-intent resolver from an IntentMap.
+ * Resolve the directory intent for a file path by finding the nearest
+ * classified ancestor in the IntentMap.
  *
- * Pre-builds an internal lookup map, so repeated file lookups are O(depth)
- * rather than O(entries) per call.
- *
- * @returns A function that resolves a file path to its nearest ancestor intent.
+ * Returns "unknown" if no classified ancestor exists.
  */
-export function createFileResolver(
+export function resolveFileIntent(
+  filePath: string,
   intentMap: IntentMap,
-): (filePath: string) => DirectoryIntent {
+): DirectoryIntent {
+  // Build a lookup map for fast ancestor resolution.
   const entryMap = new Map<string, DirectoryIntentEntry>();
 
   for (const entry of intentMap.entries) {
     entryMap.set(entry.path, entry);
   }
 
-  return (filePath: string): DirectoryIntent => {
-    let current = path.posix.normalize(filePath);
+  let current = filePath;
 
-    do {
-      if (current === "." || current === "") {
-        break;
-      }
+  while (current.includes("/")) {
+    current = path.posix.dirname(current);
 
-      const entry = entryMap.get(current);
+    if (current === "." || current === "") {
+      break;
+    }
 
-      if (entry) {
-        return entry.intent;
-      }
+    const entry = entryMap.get(current);
 
-      current = path.posix.dirname(current);
-    } while (current !== "." && current !== "");
+    if (entry) {
+      return entry.intent;
+    }
+  }
 
-    return "unknown";
-  };
-}
-
-/**
- * Resolve the directory intent for a file path by finding the nearest
- * classified ancestor in the IntentMap.
- *
- * Returns "unknown" if no classified ancestor exists.
- *
- * **Performance note:** this function rebuilds the lookup map on every call.
- * For repeated lookups, use {@link createFileResolver} instead.
- */
-export function resolveFileIntent(
-  filePath: string,
-  intentMap: IntentMap,
-): DirectoryIntent {
-  const resolver = createFileResolver(intentMap);
-  return resolver(filePath);
+  return "unknown";
 }

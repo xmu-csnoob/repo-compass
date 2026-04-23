@@ -1,38 +1,19 @@
 import path from "node:path";
 
 import type {
-  DirectoryClassifierMethod,
   DirectoryEvidence,
   DirectoryIntent,
+  DirectoryIntentEntry,
 } from "../contracts/index.js";
-
-/** Priority tiers for classification rules. Higher wins. */
-const Priority = {
-  EXACT_MATCH: 100,
-  STRONG_CONVENTION: 95,
-  CONVENTION: 90,
-  LIKELY: 80,
-  HEURISTIC: 70,
-  STRUCTURAL: 60,
-  FALLBACK: 50,
-} as const;
 
 /**
  * Classification rule with priority-based evaluation.
- * Rules are sorted by descending priority at evaluation time;
- * declaration order serves as the tie-breaker for equal priorities.
+ * Higher priority numbers win over lower ones.
  */
 interface ClassifyRule {
   readonly name: string;
   readonly priority: number;
   readonly match: (evidence: DirectoryEvidence) => boolean;
-  readonly intent: DirectoryIntent;
-  readonly confidence: "high" | "medium" | "low";
-  readonly reason: string;
-}
-
-/** Result of a successful rule match — decoupled from contract types. */
-interface RuleMatch {
   readonly intent: DirectoryIntent;
   readonly confidence: "high" | "medium" | "low";
   readonly reason: string;
@@ -85,6 +66,8 @@ const TOOLING_DIR_NAMES = new Set([
   ".husky",
   ".vscode",
   ".idea",
+  "workflows",
+  "actions",
   "benchmarks",
   "benchmark",
   "perf",
@@ -106,22 +89,14 @@ const SOURCE_DIR_NAMES = new Set([
   "source",
   "package",
   "packages",
-  "app",
-  "lib",
-]);
-
-const PACKAGE_ROOT_NAMES = new Set([
-  "packages",
-  "libs",
-  "libraries",
 ]);
 
 /**
- * Static classification rules.
+ * Static classification rules, ordered by priority (highest first).
  *
  * Conflict resolution:
  * - higher priority wins
- * - if same priority, earlier declaration wins (tie-breaker)
+ * - if same priority, rules are evaluated in declaration order
  * - "test-infrastructure" beats "example-fixtures" at same specificity
  *   per Phase 3 contract §3
  */
@@ -129,7 +104,7 @@ const STATIC_RULES: readonly ClassifyRule[] = [
   // Highest priority: explicit structural markers
   {
     name: "test-directory",
-    priority: Priority.EXACT_MATCH,
+    priority: 100,
     match: (evidence) => TEST_DIR_NAMES.has(path.posix.basename(evidence.path)),
     intent: "test-infrastructure",
     confidence: "high",
@@ -137,7 +112,7 @@ const STATIC_RULES: readonly ClassifyRule[] = [
   },
   {
     name: "example-directory",
-    priority: Priority.STRONG_CONVENTION,
+    priority: 95,
     match: (evidence) =>
       EXAMPLE_DIR_NAMES.has(path.posix.basename(evidence.path)),
     intent: "example-fixtures",
@@ -146,7 +121,7 @@ const STATIC_RULES: readonly ClassifyRule[] = [
   },
   {
     name: "docs-directory",
-    priority: Priority.STRONG_CONVENTION,
+    priority: 95,
     match: (evidence) =>
       DOCS_DIR_NAMES.has(path.posix.basename(evidence.path)),
     intent: "docs",
@@ -155,7 +130,7 @@ const STATIC_RULES: readonly ClassifyRule[] = [
   },
   {
     name: "fixture-directory",
-    priority: Priority.CONVENTION,
+    priority: 90,
     match: (evidence) =>
       path.posix.basename(evidence.path) === "fixtures" ||
       path.posix.basename(evidence.path) === "fixture",
@@ -167,7 +142,7 @@ const STATIC_RULES: readonly ClassifyRule[] = [
   // Medium priority: tooling and config
   {
     name: "tooling-directory",
-    priority: Priority.LIKELY,
+    priority: 80,
     match: (evidence) =>
       TOOLING_DIR_NAMES.has(path.posix.basename(evidence.path)),
     intent: "tooling",
@@ -176,7 +151,7 @@ const STATIC_RULES: readonly ClassifyRule[] = [
   },
   {
     name: "config-directory",
-    priority: Priority.LIKELY,
+    priority: 80,
     match: (evidence) =>
       CONFIG_DIR_NAMES.has(path.posix.basename(evidence.path)),
     intent: "config",
@@ -187,7 +162,7 @@ const STATIC_RULES: readonly ClassifyRule[] = [
   // Lower priority: source and library surface
   {
     name: "source-directory",
-    priority: Priority.HEURISTIC,
+    priority: 70,
     match: (evidence) =>
       SOURCE_DIR_NAMES.has(path.posix.basename(evidence.path)),
     intent: "core-source",
@@ -195,47 +170,61 @@ const STATIC_RULES: readonly ClassifyRule[] = [
     reason: "directory name matches known source convention",
   },
 
-  // Library surface: directories inside a known package root (e.g. packages/)
-  // that contain a manifest. This is a weak signal, so it runs after
-  // explicit conventions.
+  // Library surface: directory that shares name with a manifest package hint.
+  // This is a weak signal, so it runs after explicit conventions.
   {
     name: "library-surface-directory",
-    priority: Priority.STRUCTURAL,
+    priority: 60,
     match: (evidence) =>
-      PACKAGE_ROOT_NAMES.has(path.posix.dirname(evidence.path)) &&
-      evidence.manifest_hints.length > 0,
+      evidence.manifest_hints.length > 0 &&
+      evidence.manifest_hints.some(
+        (hint) => hint.toLowerCase() === path.posix.basename(evidence.path).toLowerCase(),
+      ),
     intent: "library-surface",
     confidence: "medium",
-    reason: "directory is a package inside a known package root containing a manifest",
+    reason: "directory name matches package manifest hint",
+  },
+
+  // Parent intent inheritance: directories inside already-classified parents
+  // inherit the parent's intent at reduced confidence.
+  {
+    name: "parent-inheritance",
+    priority: 50,
+    match: (evidence) => evidence.parent_intent !== undefined,
+    intent: "unknown", // resolved dynamically in the engine
+    confidence: "medium",
+    reason: "inherits intent from parent directory",
   },
 ];
 
-// Pre-sort rules once at module initialization so evaluation is O(n)
-// rather than O(n log n) per call.
-const SORTED_RULES: readonly ClassifyRule[] = [...STATIC_RULES].sort(
-  (a, b) => b.priority - a.priority,
-);
-
 /**
  * Evaluate static rules against directory evidence and return the best match.
- *
- * Rules are evaluated in descending priority order; declaration order breaks
- * ties for rules with equal priority.
  *
  * Returns undefined if no rule matches.
  */
 export function evaluateRules(
   evidence: DirectoryEvidence,
-): RuleMatch | undefined {
-  for (const rule of SORTED_RULES) {
+): Omit<DirectoryIntentEntry, "path" | "depth"> | undefined {
+  for (const rule of STATIC_RULES) {
     if (!rule.match(evidence)) {
       continue;
+    }
+
+    // Parent inheritance rule: use the parent's intent dynamically.
+    if (rule.name === "parent-inheritance" && evidence.parent_intent) {
+      return {
+        intent: evidence.parent_intent,
+        confidence: "medium",
+        reason: rule.reason,
+        method: "static",
+      };
     }
 
     return {
       intent: rule.intent,
       confidence: rule.confidence,
       reason: rule.reason,
+      method: "static",
     };
   }
 
