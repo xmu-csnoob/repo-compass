@@ -1,9 +1,9 @@
 import path from "node:path";
 
 import type {
+  DirectoryClassifierMethod,
   DirectoryEvidence,
   DirectoryIntent,
-  DirectoryIntentEntry,
 } from "../contracts/index.js";
 
 /** Priority tiers for classification rules. Higher wins. */
@@ -26,6 +26,13 @@ interface ClassifyRule {
   readonly name: string;
   readonly priority: number;
   readonly match: (evidence: DirectoryEvidence) => boolean;
+  readonly intent: DirectoryIntent;
+  readonly confidence: "high" | "medium" | "low";
+  readonly reason: string;
+}
+
+/** Result of a successful rule match — decoupled from contract types. */
+interface RuleMatch {
   readonly intent: DirectoryIntent;
   readonly confidence: "high" | "medium" | "low";
   readonly reason: string;
@@ -219,7 +226,7 @@ const SORTED_RULES: readonly ClassifyRule[] = [...STATIC_RULES].sort(
  */
 export function evaluateRules(
   evidence: DirectoryEvidence,
-): Omit<DirectoryIntentEntry, "path" | "depth"> | undefined {
+): RuleMatch | undefined {
   for (const rule of SORTED_RULES) {
     if (!rule.match(evidence)) {
       continue;
@@ -229,7 +236,6 @@ export function evaluateRules(
       intent: rule.intent,
       confidence: rule.confidence,
       reason: rule.reason,
-      method: "static",
     };
   }
 
