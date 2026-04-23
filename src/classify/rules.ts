@@ -172,19 +172,18 @@ const STATIC_RULES: readonly ClassifyRule[] = [
     reason: "directory name matches known source convention",
   },
 
-  // Library surface: directory that shares name with a manifest package hint.
-  // This is a weak signal, so it runs after explicit conventions.
+  // Library surface: directories inside a known package root (e.g. packages/)
+  // that contain a manifest. This is a weak signal, so it runs after
+  // explicit conventions.
   {
     name: "library-surface-directory",
     priority: 60,
     match: (evidence) =>
-      evidence.manifest_hints.length > 0 &&
-      evidence.manifest_hints.some(
-        (hint) => hint.toLowerCase() === path.posix.basename(evidence.path).toLowerCase(),
-      ),
+      path.posix.dirname(evidence.path) === "packages" &&
+      evidence.manifest_hints.length > 0,
     intent: "library-surface",
     confidence: "medium",
-    reason: "directory name matches package manifest hint",
+    reason: "directory is a package inside packages/ containing a manifest",
   },
 
   // Parent intent inheritance: directories inside already-classified parents
