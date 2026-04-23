@@ -231,13 +231,13 @@ Owner: `Codex`
 Milestone: `M2`  
 Depends on: `1.1`, `2.1`
 
-- [ ] `3.1` Wire Stage B' into CLI/orchestration flow
-- [ ] `3.2` Update `extractSignals()` to accept `IntentMap`
-- [ ] `3.3` Resolve file intent by nearest classified ancestor
-- [ ] `3.4` Suppress primary Python entrypoint extraction for:
-  - [ ] `example-fixtures`
-  - [ ] `test-infrastructure`
-- [ ] `3.5` Preserve Phase 2 behavior when intent resolution returns `unknown`
+- [x] `3.1` Wire Stage B' into CLI/orchestration flow
+- [x] `3.2` Update `extractSignals()` to accept `IntentMap`
+- [x] `3.3` Resolve file intent by nearest classified ancestor
+- [x] `3.4` Suppress primary Python entrypoint extraction for:
+  - [x] `example-fixtures`
+  - [x] `test-infrastructure`
+- [x] `3.5` Preserve Phase 2 behavior when intent resolution returns `unknown`
 
 Primary write scope:
 

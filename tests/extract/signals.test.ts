@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { extractSignals } from "../../src/extract/index.js";
 import { normalizeRepoInput } from "../../src/input/index.js";
 import { scanRepository } from "../../src/scan/index.js";
+import type { IntentMap } from "../../src/contracts/index.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -252,5 +253,126 @@ describe("extractSignals", () => {
     expect(signals.defer_candidates.some((item) => item.path === ".github")).toBe(true);
     expect(signals.defer_candidates.some((item) => item.path === "Dockerfile")).toBe(true);
     expect(signals.defer_candidates.some((item) => item.path === "docker-build.sh")).toBe(true);
+  });
+
+  it("suppresses python entrypoints under example and test intents via nearest classified ancestor", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "repo-compass-intent-suppress-"));
+    temporaryDirectories.push(repoRoot);
+
+    await mkdir(path.join(repoRoot, "src"), { recursive: true });
+    await mkdir(path.join(repoRoot, "examples", "demo"), { recursive: true });
+    await mkdir(path.join(repoRoot, "tests"), { recursive: true });
+    await writeFile(
+      path.join(repoRoot, "src", "__main__.py"),
+      'print("core")\n',
+      "utf8",
+    );
+    await writeFile(
+      path.join(repoRoot, "examples", "demo", "__main__.py"),
+      'print("example")\n',
+      "utf8",
+    );
+    await writeFile(
+      path.join(repoRoot, "tests", "__main__.py"),
+      'print("tests")\n',
+      "utf8",
+    );
+    await writeFile(
+      path.join(repoRoot, "pyproject.toml"),
+      [
+        "[project]",
+        'name = "intent-fixture"',
+        'version = "0.1.0"',
+      ].join("\n"),
+      "utf8",
+    );
+
+    const input = normalizeRepoInput({
+      schema_version: "2.0",
+      run_id: "run-extract-intent-suppress",
+      repo_root: repoRoot,
+      output_root: repoRoot,
+    });
+    const scan = await scanRepository(input);
+    const intentMap: IntentMap = {
+      schema_version: "2.0",
+      run_id: scan.run_id,
+      entries: [
+        {
+          path: "src",
+          depth: 1,
+          intent: "core-source",
+          confidence: "high",
+          reason: "Primary source tree.",
+          method: "static",
+        },
+        {
+          path: "examples",
+          depth: 1,
+          intent: "example-fixtures",
+          confidence: "high",
+          reason: "Example applications live here.",
+          method: "static",
+        },
+        {
+          path: "tests",
+          depth: 1,
+          intent: "test-infrastructure",
+          confidence: "high",
+          reason: "Test support and fixtures live here.",
+          method: "static",
+        },
+      ],
+    };
+
+    const signals = await extractSignals(scan, intentMap);
+    const entrypointPaths = new Set(signals.entrypoints.map((entrypoint) => entrypoint.path));
+
+    expect(entrypointPaths.has("src/__main__.py")).toBe(true);
+    expect(entrypointPaths.has("examples/demo/__main__.py")).toBe(false);
+    expect(entrypointPaths.has("tests/__main__.py")).toBe(false);
+  });
+
+  it("preserves phase 2 python entrypoint behavior when intent lookup resolves to unknown", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "repo-compass-intent-unknown-"));
+    temporaryDirectories.push(repoRoot);
+
+    await mkdir(path.join(repoRoot, "examples", "demo"), { recursive: true });
+    await writeFile(
+      path.join(repoRoot, "examples", "demo", "__main__.py"),
+      'print("fallback")\n',
+      "utf8",
+    );
+
+    const input = normalizeRepoInput({
+      schema_version: "2.0",
+      run_id: "run-extract-intent-unknown",
+      repo_root: repoRoot,
+      output_root: repoRoot,
+    });
+    const scan = await scanRepository(input);
+    const intentMap: IntentMap = {
+      schema_version: "2.0",
+      run_id: scan.run_id,
+      entries: [
+        {
+          path: "docs",
+          depth: 1,
+          intent: "unknown",
+          confidence: "low",
+          reason: "Unrelated classification should not suppress other paths.",
+          method: "static",
+        },
+      ],
+    };
+
+    const signals = await extractSignals(scan, intentMap);
+
+    expect(
+      signals.entrypoints.some(
+        (entrypoint) =>
+          entrypoint.path === "examples/demo/__main__.py" && entrypoint.kind === "cli",
+      ),
+    ).toBe(true);
   });
 });
