@@ -12,7 +12,6 @@ import type {
   DirectoryIntent,
   DirectoryIntentEntry,
   IntentMap,
-  ManifestKind,
   StructureScan,
 } from "../contracts/index.js";
 
@@ -37,8 +36,8 @@ function computeDepth(repoRelativePath: string): number {
 function buildManifestHints(
   dirPath: string,
   scan: StructureScan,
-): ManifestKind[] {
-  const hints = new Set<ManifestKind>();
+): string[] {
+  const hints = new Set<string>();
   const normalizedDir = path.posix.normalize(dirPath);
 
   for (const manifest of scan.detected.manifests) {
@@ -95,12 +94,15 @@ function findParentIntent(
 ): DirectoryIntent | undefined {
   let current = dirPath;
 
-  while (current !== "." && current !== "") {
-    current = path.posix.dirname(current);
+  while (current !== "." && current !== "" && current !== "/") {
+    const parent = path.posix.dirname(current);
 
-    if (current === "." || current === "") {
+    // Guard against root-level loops (dirname("/") === "/")
+    if (parent === current || parent === "." || parent === "" || parent === "/") {
       break;
     }
+
+    current = parent;
 
     const parentEntry = classified.get(current);
 
@@ -256,7 +258,7 @@ export function createFileResolver(
     let current = path.posix.normalize(filePath);
 
     do {
-      if (current === "." || current === "") {
+      if (current === "." || current === "" || current === "/") {
         break;
       }
 
@@ -266,8 +268,15 @@ export function createFileResolver(
         return entry.intent;
       }
 
-      current = path.posix.dirname(current);
-    } while (current !== "." && current !== "");
+      const parent = path.posix.dirname(current);
+
+      // Guard against root-level loops (dirname("/") === "/")
+      if (parent === current) {
+        break;
+      }
+
+      current = parent;
+    } while (current !== "." && current !== "" && current !== "/");
 
     return "unknown";
   };

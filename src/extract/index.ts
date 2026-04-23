@@ -11,6 +11,7 @@ import { resolveRepoRelativePath } from "../shared/index.js";
 import type {
   Command,
   DeferCandidate,
+  DirectoryIntent,
   Entrypoint,
   GraphEdge,
   IntentMap,
@@ -460,15 +461,29 @@ function maybeAddEntrypoint(collection: Entrypoint[], candidate: Entrypoint): vo
   collection.push(candidate);
 }
 
+/**
+ * Directory intents whose Python entrypoints should be suppressed.
+ */
+const SUPPRESSED_INTENTS: readonly DirectoryIntent[] = [
+  "example-fixtures",
+  "test-infrastructure",
+];
+
+function shouldSuppressPythonEntrypoint(
+  filePath: string,
+  resolver: ((filePath: string) => DirectoryIntent) | undefined,
+): boolean {
+  if (resolver === undefined) {
+    return false;
+  }
+  const intent = resolver(filePath);
+  return SUPPRESSED_INTENTS.includes(intent);
+}
+
 export async function extractSignals(
   scan: StructureScan,
   intentMap?: IntentMap,
 ): Promise<SignalExtraction> {
-  const resolveFileIntent = intentMap === undefined
-    ? (() => "unknown" as const)
-    : createFileResolver(intentMap);
-  const shouldSuppressPythonEntrypoint = (candidatePath: string): boolean =>
-    SUPPRESSED_PYTHON_DIRECTORY_INTENTS.has(resolveFileIntent(candidatePath));
   const knownFilePaths = new Set(
     scan.paths.filter((entry) => entry.kind === "file").map((entry) => entry.path),
   );
@@ -482,6 +497,7 @@ export async function extractSignals(
   const manifestPaths = scan.detected.manifests.filter((manifest) => manifest.kind === "package-json");
   const pyprojectManifests = scan.detected.manifests.filter((manifest) => manifest.kind === "pyproject");
   const frameworkHints = new Set(scan.detected.framework_hints);
+  const fileResolver = intentMap ? createFileResolver(intentMap) : undefined;
 
   for (const manifest of manifestPaths) {
     const packageJson = await maybeReadJson<PackageJson>(
@@ -595,7 +611,7 @@ export async function extractSignals(
         continue;
       }
 
-      if (shouldSuppressPythonEntrypoint(scriptPath)) {
+      if (shouldSuppressPythonEntrypoint(scriptPath, fileResolver)) {
         continue;
       }
 
@@ -665,7 +681,7 @@ export async function extractSignals(
       continue;
     }
 
-    if (shouldSuppressPythonEntrypoint(candidatePath)) {
+    if (shouldSuppressPythonEntrypoint(candidatePath, fileResolver)) {
       continue;
     }
 
@@ -702,11 +718,10 @@ export async function extractSignals(
       pythonFrameworkHints,
     );
 
-    if (
-      inferredEntrypoint !== undefined &&
-      !shouldSuppressPythonEntrypoint(inferredEntrypoint.path)
-    ) {
-      maybeAddEntrypoint(entrypoints, inferredEntrypoint);
+    if (inferredEntrypoint !== undefined) {
+      if (!shouldSuppressPythonEntrypoint(inferredEntrypoint.path, fileResolver)) {
+        maybeAddEntrypoint(entrypoints, inferredEntrypoint);
+      }
     }
   }
 
@@ -991,8 +1006,8 @@ export async function extractSignals(
     if (
       candidatePath.endsWith("/__init__.py") &&
       fileRoleByPath.get(candidatePath) === "source" &&
-      !shouldSuppressPythonEntrypoint(candidatePath) &&
-      !entrypoints.some((entrypoint) => entrypoint.path === candidatePath)
+      !entrypoints.some((entrypoint) => entrypoint.path === candidatePath) &&
+      !shouldSuppressPythonEntrypoint(candidatePath, fileResolver)
     ) {
       const libraryEntrypoint: Entrypoint = {
         id: makeEntrypointId(candidatePath, "library"),

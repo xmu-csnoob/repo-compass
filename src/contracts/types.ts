@@ -46,7 +46,6 @@ export type DeferForNowItem = z.infer<typeof deferForNowItemSchema>;
 export type AgentHint = z.infer<typeof agentHintSchema>;
 export type Comprehension = z.infer<typeof comprehensionSchema>;
 export type ContextIndex = z.infer<typeof contextIndexSchema>;
-export type ManifestKind = z.infer<typeof manifestSchema>["kind"];
 export type DirectoryIntent = z.infer<typeof directoryIntentSchema>;
 export type DirectoryIntentEntry = z.infer<typeof directoryIntentEntrySchema>;
 export type IntentMap = z.infer<typeof intentMapSchema>;
@@ -57,7 +56,7 @@ export interface DirectoryEvidence {
   path: string;
   depth: DirectoryDepth;
   children: string[];
-  manifest_hints: ManifestKind[];
+  manifest_hints: string[];
   parent_intent?: DirectoryIntent;
 }
 
