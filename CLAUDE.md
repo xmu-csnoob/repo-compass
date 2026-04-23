@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Multi-Agent Development**: This repo uses parallel agent development. See [`AGENTS.md`](./AGENTS.md) for worktree isolation rules, branch naming conventions (`phase-{N}-{model}`), and model self-identification requirements.
+
 ## Project Overview
 
 repo-compass is a deterministic repo-analysis tool that generates navigation artifacts (ONBOARDING.md, repo.map.md, context-index.json) for unfamiliar codebases. It uses a linear 5-stage pipeline with Zod-validated schemas at every boundary. Design principle: prefer deterministic static signals first; LLM is optional, never the primary source of truth.
