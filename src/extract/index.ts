@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import { createFileResolver } from "../classify/engine.js";
 import {
   signalExtractionSchema,
   validateContract,
@@ -12,6 +13,7 @@ import type {
   DeferCandidate,
   Entrypoint,
   GraphEdge,
+  IntentMap,
   PriorityCandidate,
   SignalExtraction,
   StructurePath,
@@ -73,6 +75,11 @@ const PYTHON_COMMON_ENTRYPOINTS = [
   "wsgi.py",
   "asgi.py",
 ] as const;
+
+const SUPPRESSED_PYTHON_DIRECTORY_INTENTS = new Set([
+  "example-fixtures",
+  "test-infrastructure",
+]);
 
 function makeEntrypointId(pathValue: string, kind: Entrypoint["kind"]): string {
   return `${kind}:${pathValue}`;
@@ -453,7 +460,15 @@ function maybeAddEntrypoint(collection: Entrypoint[], candidate: Entrypoint): vo
   collection.push(candidate);
 }
 
-export async function extractSignals(scan: StructureScan): Promise<SignalExtraction> {
+export async function extractSignals(
+  scan: StructureScan,
+  intentMap?: IntentMap,
+): Promise<SignalExtraction> {
+  const resolveFileIntent = intentMap === undefined
+    ? (() => "unknown" as const)
+    : createFileResolver(intentMap);
+  const shouldSuppressPythonEntrypoint = (candidatePath: string): boolean =>
+    SUPPRESSED_PYTHON_DIRECTORY_INTENTS.has(resolveFileIntent(candidatePath));
   const knownFilePaths = new Set(
     scan.paths.filter((entry) => entry.kind === "file").map((entry) => entry.path),
   );
@@ -580,6 +595,10 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
         continue;
       }
 
+      if (shouldSuppressPythonEntrypoint(scriptPath)) {
+        continue;
+      }
+
       maybeAddEntrypoint(entrypoints, {
         id: makeEntrypointId(scriptPath, "cli"),
         path: scriptPath,
@@ -646,6 +665,10 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
       continue;
     }
 
+    if (shouldSuppressPythonEntrypoint(candidatePath)) {
+      continue;
+    }
+
     const kind = inferPythonEntrypointKind(candidatePath, pythonFrameworkHints);
     const confidence: Entrypoint["confidence"] =
       candidatePath === "manage.py" || candidatePath === "src/__main__.py"
@@ -679,7 +702,10 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
       pythonFrameworkHints,
     );
 
-    if (inferredEntrypoint !== undefined) {
+    if (
+      inferredEntrypoint !== undefined &&
+      !shouldSuppressPythonEntrypoint(inferredEntrypoint.path)
+    ) {
       maybeAddEntrypoint(entrypoints, inferredEntrypoint);
     }
   }
@@ -965,6 +991,7 @@ export async function extractSignals(scan: StructureScan): Promise<SignalExtract
     if (
       candidatePath.endsWith("/__init__.py") &&
       fileRoleByPath.get(candidatePath) === "source" &&
+      !shouldSuppressPythonEntrypoint(candidatePath) &&
       !entrypoints.some((entrypoint) => entrypoint.path === candidatePath)
     ) {
       const libraryEntrypoint: Entrypoint = {

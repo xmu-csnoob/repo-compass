@@ -2,6 +2,7 @@ import { access, constants } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { buildIntentMap } from "../classify/index.js";
 import { buildComprehension } from "../comprehend/index.js";
 import { normalizeRepoInput } from "../input/index.js";
 import { renderAgentStart, renderContextIndex, renderHtmlReport, renderOnboarding, renderRepoMap } from "../render/index.js";
@@ -169,7 +170,8 @@ export async function runPipeline(argv: readonly string[]): Promise<{
   const input = await buildRepoInput(options);
   const previousFreshness = await loadPreviousFreshnessState(input.output_root);
   const scan = await scanRepository(input);
-  const signals = await extractSignals(scan);
+  const intentMap = await buildIntentMap(scan);
+  const signals = await extractSignals(scan, intentMap);
   const freshness = computeFreshness(input, scan, previousFreshness);
   const comprehension = buildComprehension(input, scan, signals, freshness);
   const contextIndex = renderContextIndex(comprehension);
