@@ -1,0 +1,117 @@
+  Review: repo-compass 产物评估 (Flask + FastAPI)
+
+  1. 帮助程度评估
+
+  总体评分：6/10 — 有用但信噪比不够高
+
+  做得好的地方：
+  - context-index.json 结构化好，schema 清晰，有 Zod 验证，对 agent 消费非常友好
+  - Flask 的 app.py 被正确识别为 server entrypoint，flask run 启动命令正确
+  - FastAPI 的 app/main.py 被正确识别为 server entrypoint，置信度 high
+  - Import graph 的 module-link 边正确捕捉了 test_app.py -> app.py、app/main.py -> app/routers 等依赖
+  - pyproject.toml 作为 first read path 是合理的
+  - agent-start.md 格式简洁，适合直接喂给 LLM 做 system prompt
+  - 5个产物面向不同消费者（人/agent/浏览器）的设计很好
+
+  不够的地方：
+  - 对于一个小型 fixture 项目（7-10 个文件），产物信息量偏少 —— 基本上只是列出了文件清单 + 猜测入口点，没有比 tree + cat 多给出多少洞见
+  - 缺少项目功能摘要 —— 看完所有产物后，我只知道"这是一个 Flask/FastAPI 项目"，但不知道它做了什么（一个 CRUD items 服务）
+  - 缺少 API 路由/端点信息 —— 对 Web 框架项目来说这是最核心的
+  - 缺少依赖关系的实质内容 —— pyproject.toml 里的 dependencies 没有被提取出来
+  - 没有检测到测试命令 (pytest)，两个项目都显示 "No test command was inferred"，但 conftest.py 的存在强烈暗示 pytest
+
+  ---
+  2. 明显有问题/可能误导的信息
+
+  严重问题
+
+  A. FastAPI 的启动命令完全错误
+
+  agent_hints.run: "Use python app/main.py to run the application." — 这是错误的。
+
+  实际源码 app/main.py 没有 if __name__ == "__main__" 块，直接 python app/main.py 不会启动服务器。正确命令是 uvicorn
+  app.main:app。pyproject.toml 里明确依赖了 uvicorn>=0.23.0，这个信号被忽略了。
+
+  如果一个 agent 按照这个 hint 执行，会什么都不发生然后困惑。
+
+  B. __init__.py 被过度提升为 "entrypoint"
+
+  FastAPI 项目中，3个 __init__.py 全部被标记为 kind: "library" entrypoint：
+  - app/__init__.py — 只有一行 docstring """FastAPI application package."""
+  - app/routers/__init__.py — 只有一行 """Routers package."""
+  - app/models/__init__.py — 有 re-export，但将它标为 "Library entrypoint — public API surface for consumers" 明显夸大
+
+  这导致 first_read_path 有6个条目，其中3个是空的 __init__.py。读它们浪费时间，信噪比很低。
+
+  C. repo_shape 判断为 mixed — 两个项目都不准确
+
+  - Flask fixture 是一个纯 web service（有 app.py、routes、templates、static）
+  - FastAPI fixture 也是一个纯 web service（有 app 包、routers、models）
+
+  两个都应该是 service 或 application，不是 mixed。mixed 暗示"这个 repo 同时包含 library + app + tool 等混合形态"，对这俩小项目来说是误判。
+
+  中度问题
+
+  D. static/ 和 templates/ 的 role 是 unknown
+
+  Flask 项目中 static/style.css 和 templates/index.html 的 role 都是 unknown。对于 Flask 框架，templates/ 目录是 Jinja2 模板的标准约定，static/
+  是静态资源的标准约定。既然已经检测到了 flask 框架，这两个目录应该能被赋予更有意义的 role（如 source 或新增一个 asset/template role）。
+
+  E. "This is likely the first runtime hop" 对 __init__.py 是误导的
+
+  FastAPI 的 first_read_path 中，app/__init__.py、app/models/__init__.py、app/routers/__init__.py 都用了 why_now: "This is likely the first
+  runtime hop." —— 它们不是 runtime hop，它们是 Python 包的结构性文件。把它们等同于"第一个运行时跳跃"是概念错误。
+
+  F. 重复信息过多
+
+  在 5 个产物之间，同一信息被重复了 5 次：
+  - app/main.py 是 entrypoint → 出现在 context-index.json（entrypoints + key_paths + first_read_path）+ repo.map.md + ONBOARDING.md +
+  agent-start.md + index.html
+  - 不同产物面向不同消费者的设计意图是好的，但内容几乎完全相同，差异只是格式
+
+  ---
+  3. 对 repo-compass 的建议
+
+  高优先级
+
+  1. 框架感知的启动命令推断 — 当检测到 fastapi 框架 + uvicorn 在 dependencies 中时，应生成 uvicorn app.main:app 而不是 python
+  app/main.py。这需要一个 framework → run_command 映射表，至少覆盖 Flask（flask run）、FastAPI（uvicorn）、Django（python manage.py
+  runserver）等主流框架。
+  2. __init__.py 降噪 — 不要将空或仅含 docstring 的 __init__.py 标记为 entrypoint。建议：只有当 __init__.py 包含实质性导出（如
+  __all__、re-export、类/函数定义）时才提升优先级，否则标记为 structural/boilerplate 并从 first_read_path 中排除。
+  3. 测试命令检测 — conftest.py 的存在是 pytest 的强信号。当存在 conftest.py 或 pytest 在 dev-dependencies 中时，应推断 pytest 作为 test
+  command。类似地，setup.cfg 中的 [tool:pytest] 或 pyproject.toml 中的 [tool.pytest] 也是信号。
+  4. repo_shape 改进 — 当检测到 web 框架（flask/fastapi/django/express 等）+ 有路由/视图文件 + 没有 setup.py/setup.cfg 中的 packages
+  配置时，应偏向 service 而非 mixed。
+
+  中优先级
+
+  5. 提取依赖清单 — pyproject.toml 的 dependencies 列表是理解项目的关键信号（如 uvicorn 暗示 ASGI、flask 暗示 WSGI），应在产物中摘录核心依赖。
+  6. Web 框架路由提取 — 对于检测到 web 框架的项目，解析路由定义（Flask 的 @app.route、FastAPI 的 @app.get/post 等装饰器）作为 API
+  surface，这比列出 __init__.py 有价值得多。
+  7. templates/ 和 static/ 的框架感知分类 — 当框架是 Flask/Django 时，templates/ → role template，static/ → role asset。
+  8. Critical Paths 应有内容 — 两个项目的 critical_paths 都是空的。但实际上 app/main.py → app/routers/items.py → app/models/item.py
+  是一条清晰的请求处理关键路径，应该被识别出来。
+
+  低优先级
+
+  9. 产物间去重/差异化 — agent-start.md 和 ONBOARDING.md 内容几乎完全一样。建议：agent-start.md 应更精简（纯 structured data，无
+  prose），ONBOARDING.md 应更丰富（加入 narrative，解释项目做什么）。
+  10. first_read_path 限制数量 — 6个 first-read 条目太多了，建议限制为 top 3-4，其余放到
+  key_paths。阅读路径的价值在于排序和筛选，全列出来就失去了"指导"的意义。
+  11. Confidence 标注不一致 — pyproject.toml 在 first_read_path 中是 high confidence 但在渲染时不显示 badge，而 medium confidence 的条目显示了
+  badge。建议：要么都显示，要么对 high 也显示（绿色 badge），这样用户能区分优先级。
+
+  ---
+  总结
+
+  这些产物在结构化元数据方面做得不错（schema 清晰、面向不同消费者的多格式输出），对我（作为 AI agent）来说核心价值在于 context-index.json 中的
+  graph edges 和 entrypoints。但目前主要痛点是：
+
+  - 关键信息缺失（启动命令错误、没有测试命令、没有 API 路由、没有依赖摘要）
+  - 噪音信息过多（空 __init__.py 被大量提升、first_read_path 太长）
+  - repo_shape 分类不准（两个明显的 service 都被判为 mixed）
+
+  如果我拿到这些产物去上手一个真实的 FastAPI 项目，第一件事还是会去 cat app/main.py 和 cat
+  pyproject.toml，产物没有帮我省下这一步。真正能帮到我的是：告诉我"这是一个 CRUD items API，用 uvicorn 启动，pytest 测试，请求路径是 main.py →
+  routers/items.py → models/item.py"
