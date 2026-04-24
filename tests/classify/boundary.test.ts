@@ -364,4 +364,72 @@ describe("boundary - mixed signals", () => {
     expect(byPath.get("src")?.intent).toBe("core-source");
     expect(byPath.get("src/docs")?.intent).toBe("docs");
   });
+
+  it("a Python package inside docs_src/ stays example-fixtures (parent suppression)", async () => {
+    // Simulates fastapi/fastapi: docs_src/some_module/__init__.py exists.
+    // The child is a Python package (python_package=true via __init__.py) but
+    // should remain example-fixtures because docs_src/ is a suppression surface.
+    const scan = makeScan({
+      paths: [
+        dirEntry("docs_src"),
+        dirEntry("docs_src/app_module"),
+        fileEntry("docs_src/app_module/__init__.py"),
+      ],
+    });
+
+    const intentMap = await buildIntentMap(scan);
+    const byPath = new Map(intentMap.entries.map((e) => [e.path, e]));
+
+    expect(byPath.get("docs_src")?.intent).toBe("example-fixtures");
+    expect(byPath.get("docs_src/app_module")?.intent).toBe("example-fixtures");
+    expect(byPath.get("docs_src/app_module")?.reason).toBe("inherits suppression intent from parent directory");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Python package directory detection
+// ---------------------------------------------------------------------------
+
+describe("boundary - python package detection", () => {
+  it("classifies a depth-1 directory with __init__.py as library-surface", async () => {
+    const scan = makeScan({
+      paths: [
+        dirEntry("fastapi"),
+        fileEntry("fastapi/__init__.py"),
+      ],
+    });
+
+    const intentMap = await buildIntentMap(scan);
+    const byPath = new Map(intentMap.entries.map((e) => [e.path, e]));
+
+    expect(byPath.get("fastapi")?.intent).toBe("library-surface");
+    expect(byPath.get("fastapi")?.confidence).toBe("medium");
+  });
+
+  it("test-infrastructure rule beats python-package detection", async () => {
+    const scan = makeScan({
+      paths: [
+        dirEntry("tests"),
+        fileEntry("tests/__init__.py"),
+      ],
+    });
+
+    const intentMap = await buildIntentMap(scan);
+    const byPath = new Map(intentMap.entries.map((e) => [e.path, e]));
+
+    expect(byPath.get("tests")?.intent).toBe("test-infrastructure");
+  });
+
+  it("does not classify a directory as library-surface without __init__.py", async () => {
+    const scan = makeScan({
+      paths: [
+        dirEntry("mypackage"),
+      ],
+    });
+
+    const intentMap = await buildIntentMap(scan);
+    const byPath = new Map(intentMap.entries.map((e) => [e.path, e]));
+
+    expect(byPath.get("mypackage")?.intent).toBe("unknown");
+  });
 });

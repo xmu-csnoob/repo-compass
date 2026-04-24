@@ -53,6 +53,26 @@ function buildManifestHints(
 }
 
 /**
+ * Return true if the directory contains an __init__.py file directly (not in
+ * a subdirectory), indicating it is a Python package namespace.
+ */
+function isPythonPackage(
+  dirPath: string,
+  scan: StructureScan,
+): boolean {
+  const normalizedDir = path.posix.normalize(dirPath);
+  const target = `${normalizedDir}/__init__.py`;
+
+  for (const entry of scan.paths) {
+    if (entry.kind === "file" && path.posix.normalize(entry.path) === target) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Build the list of immediate child directory names for a directory.
  * Only counts entries whose kind is "directory"; files are excluded.
  */
@@ -115,6 +135,17 @@ function findParentIntent(
 }
 
 /**
+ * Intents that represent noise surfaces that must propagate to children.
+ * A child directory under one of these parents cannot be reclassified by
+ * a non-suppression rule (e.g. a Python package inside docs_src/ must stay
+ * example-fixtures, not become library-surface).
+ */
+const SUPPRESSION_INTENTS = new Set<DirectoryIntent>([
+  "example-fixtures",
+  "test-infrastructure",
+]);
+
+/**
  * Static classifier that applies deterministic rules to directory evidence.
  *
  * Implements the {@link DirectoryClassifier} interface so that future
@@ -129,6 +160,30 @@ export class StaticClassifier implements DirectoryClassifier {
     const match = evaluateRules(evidence);
 
     if (match) {
+      // Suppression-grade parents take precedence over non-suppression rules.
+      // This prevents generic rules (e.g. python-package-directory →
+      // library-surface) from reclassifying directories nested inside example
+      // or test surfaces.
+      //
+      // Exception: if the matching rule itself assigns a suppression-grade
+      // intent, allow it to override the parent. This preserves existing
+      // behaviour such as tests/fixtures → example-fixtures even when the
+      // parent is test-infrastructure.
+      if (
+        evidence.parent_intent !== undefined &&
+        SUPPRESSION_INTENTS.has(evidence.parent_intent) &&
+        !SUPPRESSION_INTENTS.has(match.intent)
+      ) {
+        return {
+          path: evidence.path,
+          depth: evidence.depth,
+          intent: evidence.parent_intent,
+          confidence: "high",
+          reason: "inherits suppression intent from parent directory",
+          method: this.method,
+        };
+      }
+
       return {
         path: evidence.path,
         depth: evidence.depth,
@@ -214,6 +269,7 @@ export async function buildIntentMap(
     const children = buildChildren(dir.path, scan);
     const manifestHints = buildManifestHints(dir.path, scan);
     const parentIntent = findParentIntent(dir.path, classified);
+    const pythonPackage = isPythonPackage(dir.path, scan);
 
     const evidence: DirectoryEvidence = {
       path: dir.path,
@@ -221,6 +277,7 @@ export async function buildIntentMap(
       children,
       manifest_hints: manifestHints,
       ...(parentIntent ? { parent_intent: parentIntent } : {}),
+      ...(pythonPackage ? { python_package: true } : {}),
     };
 
     const entry = await classifier.classify(evidence);

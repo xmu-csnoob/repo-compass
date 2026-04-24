@@ -173,7 +173,7 @@ export async function runPipeline(argv: readonly string[]): Promise<{
   const intentMap = await buildIntentMap(scan);
   const signals = await extractSignals(scan, intentMap);
   const freshness = computeFreshness(input, scan, previousFreshness);
-  const comprehension = buildComprehension(input, scan, signals, freshness);
+  const comprehension = buildComprehension(input, scan, signals, freshness, intentMap);
   const contextIndex = renderContextIndex(comprehension);
 
   const outputPaths = [

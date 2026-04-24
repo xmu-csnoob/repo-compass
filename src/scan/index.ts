@@ -246,7 +246,14 @@ function detectFrameworkHints(entries: readonly WalkEntry[], packageJsonContent?
       hints.add("fastapi");
     }
 
-    if (/flask/u.test(allPythonText) || allPaths.has("app.py") || allPaths.has("application.py")) {
+    // Require path evidence (app.py / application.py) OR flask mention without a
+    // stronger competing web framework already detected. This prevents false
+    // positives when flask appears only as a test dependency (e.g. fastapi/fastapi).
+    if (
+      allPaths.has("app.py") ||
+      allPaths.has("application.py") ||
+      (/flask/u.test(allPythonText) && !hints.has("fastapi") && !hints.has("django"))
+    ) {
       hints.add("flask");
     }
 

@@ -58,6 +58,8 @@ export interface DirectoryEvidence {
   children: string[];
   manifest_hints: string[];
   parent_intent?: DirectoryIntent;
+  /** True when the directory contains an __init__.py file, indicating it is a Python package. */
+  python_package?: boolean;
 }
 
 export interface DirectoryClassifier {

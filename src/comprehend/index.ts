@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { createFileResolver } from "../classify/index.js";
 import type {
   Comprehension,
   RepoInput,
@@ -11,6 +12,8 @@ import type {
   CriticalPath,
   DeferForNowItem,
   RepoMetadata,
+  IntentMap,
+  DirectoryIntent,
 } from "../contracts/index.js";
 import type { FreshnessResult } from "../freshness/index.js";
 
@@ -19,6 +22,7 @@ export function buildComprehension(
   scan: import("../contracts/index.js").StructureScan,
   signals: SignalExtraction,
   freshnessResult?: FreshnessResult,
+  intentMap?: IntentMap,
 ): Comprehension {
   const allPathEntries = scan.paths;
   const pathSet = new Set(allPathEntries.map((entry) => entry.path));
@@ -101,6 +105,30 @@ export function buildComprehension(
   ].filter((shape): shape is RepoMetadata["repo_shape"] => shape !== null);
   const repoShape: RepoMetadata["repo_shape"] =
     structuralShapes.length === 1 ? (structuralShapes[0] ?? "mixed") : "mixed";
+  const resolveIntent = intentMap ? createFileResolver(intentMap) : undefined;
+
+  function pathDepth(pathValue: string): number {
+    return pathValue.split("/").filter(Boolean).length;
+  }
+
+  function topLevelDir(pathValue: string): string | undefined {
+    const first = pathValue.split("/").find(Boolean);
+    return first === undefined ? undefined : first;
+  }
+
+  function isSuppressionIntent(intent: DirectoryIntent | undefined): boolean {
+    return intent === "example-fixtures" || intent === "test-infrastructure";
+  }
+
+  function isPrimaryEditIntent(intent: DirectoryIntent | undefined): boolean {
+    return intent === "core-source" || intent === "library-surface";
+  }
+
+  const topLevelLibrarySurface = intentMap?.entries.find(
+    (entry) => entry.depth === 1 && entry.intent === "library-surface",
+  );
+  const topLevelLibraryDir = topLevelLibrarySurface?.path;
+  const isPythonLibraryLikeRepo = topLevelLibraryDir !== undefined;
 
   const keyPaths: KeyPath[] = [];
   const seenKeyPaths = new Set<string>();
@@ -342,11 +370,16 @@ export function buildComprehension(
     });
   }
 
-  // Python run hints — pick the highest-priority entrypoint
   const pythonEntrypoints = signals.entrypoints.filter((e) => e.path.endsWith(".py"));
+  const pythonModuleEntrypoint = isPythonLibraryLikeRepo
+    ? pythonEntrypoints.find((e) => e.path === `${topLevelLibraryDir}/__main__.py`)
+    : undefined;
+  // Python run hints — library-like repos prefer module/CLI guidance over
+  // generic "run the application" hints from package internals.
   const pythonRunEntrypoint =
-    pythonEntrypoints.find((e) => e.kind === "server") ??
+    pythonModuleEntrypoint ??
     pythonEntrypoints.find((e) => e.kind === "cli") ??
+    pythonEntrypoints.find((e) => e.kind === "server") ??
     pythonEntrypoints.find((e) => e.kind === "app") ??
     pythonEntrypoints[0];
 
@@ -390,7 +423,7 @@ export function buildComprehension(
         confidence: "medium" as const,
         evidence: [epPath],
       });
-    } else if (epKind === "server" || epKind === "app") {
+    } else if ((epKind === "server" || epKind === "app") && !isPythonLibraryLikeRepo) {
       agentHints.push({
         kind: "run" as const,
         text: `Use python ${epPath} to run the application.`,
@@ -422,11 +455,32 @@ export function buildComprehension(
     });
   }
 
+  const preferredIntentDirectory = allPathEntries
+    .filter((entry) => entry.kind === "directory")
+    .filter((entry) => isPrimaryEditIntent(resolveIntent?.(entry.path)))
+    .sort((a, b) => {
+      const aPreferred = ["src", "app", "lib"].includes(a.path) ? 0 : 1;
+      const bPreferred = ["src", "app", "lib"].includes(b.path) ? 0 : 1;
+
+      if (aPreferred !== bPreferred) {
+        return aPreferred - bPreferred;
+      }
+
+      return pathDepth(a.path) - pathDepth(b.path) || a.path.localeCompare(b.path);
+    })[0];
   const sourceDirectory = allPathEntries.find(
     (entry) => entry.kind === "directory" && entry.role === "source" && ["src", "app", "lib"].includes(entry.path),
   );
-  const safeEditPath = sourceDirectory
-    ?? allPathEntries.find((entry) => entry.kind === "directory" && entry.role === "source")
+  const fallbackSourceDirectory = allPathEntries.find(
+    (entry) =>
+      entry.kind === "directory" &&
+      entry.role === "source" &&
+      !isSuppressionIntent(resolveIntent?.(entry.path)) &&
+      !["docs", "tooling", "config"].includes(resolveIntent?.(entry.path) ?? ""),
+  );
+  const safeEditPath = preferredIntentDirectory
+    ?? sourceDirectory
+    ?? fallbackSourceDirectory
     ?? allPathEntries.find((entry) => entry.kind === "file" && entry.role === "source");
 
   if (safeEditPath !== undefined) {

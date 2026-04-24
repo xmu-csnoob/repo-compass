@@ -205,12 +205,12 @@ Owner: `Kimi`
 Milestone: `M1`  
 Depends on: `0.2`
 
-- [ ] `2.1` Create `src/classify/index.ts`
-- [ ] `2.2` Create `src/classify/engine.ts`
-- [ ] `2.3` Create `src/classify/rules.ts`
-- [ ] `2.4` Implement bounded depth directory collection
-- [ ] `2.5` Implement rule priority and conflict resolution
-- [ ] `2.6` Implement nearest-ancestor intent lookup helper
+- [x] `2.1` Create `src/classify/index.ts`
+- [x] `2.2` Create `src/classify/engine.ts`
+- [x] `2.3` Create `src/classify/rules.ts`
+- [x] `2.4` Implement bounded depth directory collection
+- [x] `2.5` Implement rule priority and conflict resolution
+- [x] `2.6` Implement nearest-ancestor intent lookup helper
 
 Primary write scope:
 
@@ -260,13 +260,13 @@ Owner: `Minimax`
 Milestone: `M2`  
 Depends on: `0.2`
 
-- [ ] `4.1` Add `tests/classify/` coverage
-- [ ] `4.2` Add rule-priority tests
-- [ ] `4.3` Add ancestor fallback tests
-- [ ] `4.4` Add boundary tests for:
-  - [ ] flat repos
-  - [ ] unknown-only classification
-  - [ ] empty-directory tolerance
+- [x] `4.1` Add `tests/classify/` coverage
+- [x] `4.2` Add rule-priority tests
+- [x] `4.3` Add ancestor fallback tests
+- [x] `4.4` Add boundary tests for:
+  - [x] flat repos
+  - [x] unknown-only classification
+  - [x] empty-directory tolerance
 
 Primary write scope:
 
@@ -286,10 +286,10 @@ Owner: `Minimax`
 Milestone: `M3`  
 Depends on: `3.4`
 
-- [ ] `5.1` Add extraction regression tests proving fixture suppression
-- [ ] `5.2` Validate `fastapi/fastapi` as primary real-repo target
+- [x] `5.1` Add extraction regression tests proving fixture suppression
+- [x] `5.2` Validate `fastapi/fastapi` as primary real-repo target (release-gate blocking issues resolved)
 - [ ] `5.3` Add one structurally different regression target
-- [ ] `5.4` Record expected Phase 3 quality gates
+- [x] `5.4` Record expected Phase 3 quality gates
 
 Primary write scope:
 
@@ -334,10 +334,10 @@ Owner: `Codex`
 Milestone: `M4`  
 Depends on: `5.4`, `6.3`
 
-- [ ] `7.1` Sync frozen docs if implementation exposes contract gaps
+- [x] `7.1` Sync frozen docs if implementation exposes contract gaps
 - [ ] `7.2` Keep `docs/phase3/agent-guide.md` aligned with settled Phase 3 rules
-- [ ] `7.3` Update Kanban status and dependency notes
-- [ ] `7.4` Prepare PR summary and acceptance notes
+- [x] `7.3` Update Kanban status and dependency notes
+- [x] `7.4` Prepare PR summary and acceptance notes
 
 Primary write scope:
 
@@ -424,11 +424,11 @@ Interpretation:
 
 Phase 3 is not done until all of the following are true:
 
-- [ ] `IntentMap` contracts are implemented and validated
-- [ ] classifier logic is bounded to depth `2`
-- [ ] extraction suppresses primary Python fixture entrypoints
-- [ ] `fastapi/fastapi` no longer floods primary entrypoint and read-first views
+- [x] `IntentMap` contracts are implemented and validated
+- [x] classifier logic is bounded to depth `2`
+- [x] extraction suppresses primary Python fixture entrypoints
+- [x] `fastapi/fastapi` no longer floods primary entrypoint and read-first views
 - [ ] one structurally different regression target still produces credible
       navigation
-- [ ] `intent-map.json` is debug-only
-- [ ] frozen docs and implementation still agree
+- [x] `intent-map.json` is debug-only
+- [x] frozen docs and implementation still agree

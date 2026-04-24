@@ -128,6 +128,39 @@ describe("StaticClassifier", () => {
     expect(result.intent).toBe("core-source");
     expect(result.confidence).toBe("medium");
   });
+
+  it("suppression-grade parent overrides a non-suppression rule match", async () => {
+    // A Python package (python_package=true) nested inside docs_src/ should
+    // stay example-fixtures, not become library-surface.
+    const evidence: DirectoryEvidence = {
+      path: "docs_src/app",
+      depth: 2,
+      children: [],
+      manifest_hints: [],
+      parent_intent: "example-fixtures",
+      python_package: true,
+    };
+
+    const result = await classifier.classify(evidence);
+    expect(result.intent).toBe("example-fixtures");
+    expect(result.confidence).toBe("high");
+    expect(result.reason).toBe("inherits suppression intent from parent directory");
+  });
+
+  it("suppression-grade rule overrides a suppression-grade parent", async () => {
+    // tests/fixtures: parent is test-infrastructure, rule gives example-fixtures.
+    // Both are suppression intents — the rule (example-fixtures) wins.
+    const evidence: DirectoryEvidence = {
+      path: "tests/fixtures",
+      depth: 2,
+      children: [],
+      manifest_hints: [],
+      parent_intent: "test-infrastructure",
+    };
+
+    const result = await classifier.classify(evidence);
+    expect(result.intent).toBe("example-fixtures");
+  });
 });
 
 // ---------------------------------------------------------------------------

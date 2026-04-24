@@ -63,6 +63,11 @@ const EXAMPLE_DIR_NAMES = new Set([
   "tutorials",
   "tutorial",
   "snippets",
+  // doc-example surfaces (e.g. FastAPI's docs_src, docs_src_*)
+  "docs_src",
+  "doc_src",
+  "docs_examples",
+  "doc_examples",
 ]);
 
 const DOCS_DIR_NAMES = new Set([
@@ -207,6 +212,20 @@ const STATIC_RULES: readonly ClassifyRule[] = [
     intent: "library-surface",
     confidence: "medium",
     reason: "directory is a package inside a known package root containing a manifest",
+  },
+
+  // Root-level Python package (depth-1 directory containing __init__.py).
+  // Identifies library namespaces such as fastapi/ or flask/ that sit at the
+  // repo root and are not covered by any stronger naming convention.
+  // Priority STRUCTURAL (60) — weaker than any explicit naming convention so
+  // that test/example/docs directories are not accidentally reclassified.
+  {
+    name: "python-package-directory",
+    priority: Priority.STRUCTURAL,
+    match: (evidence) => evidence.python_package === true,
+    intent: "library-surface",
+    confidence: "medium",
+    reason: "directory is a Python package (contains __init__.py)",
   },
 ];
 
