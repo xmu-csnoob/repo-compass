@@ -71,6 +71,27 @@ describe("evaluateRules - exact match", () => {
     expect(result?.intent).toBe("example-fixtures");
   });
 
+  it("matches 'docs_src' as example-fixtures", () => {
+    const result = evaluateRules(evidence({ path: "docs_src" }));
+    expect(result?.intent).toBe("example-fixtures");
+    expect(result?.confidence).toBe("high");
+  });
+
+  it("matches 'doc_src' as example-fixtures", () => {
+    const result = evaluateRules(evidence({ path: "doc_src" }));
+    expect(result?.intent).toBe("example-fixtures");
+  });
+
+  it("matches 'docs_examples' as example-fixtures", () => {
+    const result = evaluateRules(evidence({ path: "docs_examples" }));
+    expect(result?.intent).toBe("example-fixtures");
+  });
+
+  it("matches 'doc_examples' as example-fixtures", () => {
+    const result = evaluateRules(evidence({ path: "doc_examples" }));
+    expect(result?.intent).toBe("example-fixtures");
+  });
+
   it("matches 'docs' as docs", () => {
     const result = evaluateRules(evidence({ path: "docs" }));
     expect(result?.intent).toBe("docs");
@@ -216,6 +237,35 @@ describe("evaluateRules - priority", () => {
   it("test-infrastructure beats tooling for a test name", () => {
     const result = evaluateRules(evidence({ path: "tests" }));
     expect(result?.intent).toBe("test-infrastructure");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Python package rule
+// ---------------------------------------------------------------------------
+
+describe("evaluateRules - python package", () => {
+  it("matches a directory with python_package=true as library-surface", () => {
+    const result = evaluateRules(evidence({ path: "fastapi", python_package: true }));
+    expect(result?.intent).toBe("library-surface");
+    expect(result?.confidence).toBe("medium");
+  });
+
+  it("does not match as library-surface when python_package is false", () => {
+    const result = evaluateRules(evidence({ path: "fastapi", python_package: false }));
+    // No other rule matches "fastapi", so undefined
+    expect(result).toBeUndefined();
+  });
+
+  it("test-infrastructure beats python-package-directory by priority", () => {
+    // tests/__init__.py exists → python_package true, but test-directory rule wins
+    const result = evaluateRules(evidence({ path: "tests", python_package: true }));
+    expect(result?.intent).toBe("test-infrastructure");
+  });
+
+  it("example-fixtures beats python-package-directory by priority", () => {
+    const result = evaluateRules(evidence({ path: "docs_src", python_package: true }));
+    expect(result?.intent).toBe("example-fixtures");
   });
 });
 
