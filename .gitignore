@@ -4,3 +4,4 @@ coverage/
 work/
 .reviews/
 .worktrees/
+.repo-compass/

@@ -209,16 +209,16 @@ function createMockCache(): PipelineCache {
 }
 
 describe("registerAllTools", () => {
-  it("registers all 7 tools", () => {
+  it("registers exactly 2 tools", () => {
     const server = createMockServer() as ReturnType<typeof createMockServer>;
     const cache = createMockCache();
 
     registerAllTools(server as never, cache);
 
-    expect(server.registerTool).toHaveBeenCalledTimes(7);
+    expect(server.registerTool).toHaveBeenCalledTimes(2);
   });
 
-  it("registers scan_repo as the first tool", () => {
+  it("registers generate_repo_guide as the first tool", () => {
     const server = createMockServer() as ReturnType<typeof createMockServer>;
     const cache = createMockCache();
 
@@ -226,41 +226,58 @@ describe("registerAllTools", () => {
 
     expect(server.registerTool).toHaveBeenNthCalledWith(
       1,
-      "scan_repo",
+      "generate_repo_guide",
       expect.objectContaining({
-        description: expect.stringContaining("Scan"),
-        annotations: { readOnlyHint: true },
+        description: expect.stringContaining("HTML"),
+        annotations: { readOnlyHint: false },
       }),
       expect.any(Function),
     );
   });
 
-  it("registers get_file_summary as the last tool", () => {
+  it("registers get_agent_context as the second tool", () => {
     const server = createMockServer() as ReturnType<typeof createMockServer>;
     const cache = createMockCache();
 
     registerAllTools(server as never, cache);
 
     expect(server.registerTool).toHaveBeenNthCalledWith(
-      7,
-      "get_file_summary",
+      2,
+      "get_agent_context",
       expect.objectContaining({
-        description: expect.stringContaining("structured per-file"),
+        description: expect.stringContaining("agent startup"),
         annotations: { readOnlyHint: true },
       }),
       expect.any(Function),
     );
   });
 
-  it("all tools have readOnlyHint annotation", () => {
+  it("generate_repo_guide accepts output_dir parameter", () => {
     const server = createMockServer() as ReturnType<typeof createMockServer>;
     const cache = createMockCache();
 
     registerAllTools(server as never, cache);
 
-    const calls = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls;
-    for (const [, config] of calls) {
-      expect(config.annotations).toEqual({ readOnlyHint: true });
-    }
+    const calls = (server.registerTool as ReturnType<typeof vi.fn>).mock
+      .calls as [string, { inputSchema: Record<string, unknown> }, unknown][];
+    const guideCall = calls.find(([name]) => name === "generate_repo_guide")!;
+    expect(guideCall[1].inputSchema).toHaveProperty("output_dir");
+  });
+
+  it("get_agent_context only accepts repo_root, include, exclude", () => {
+    const server = createMockServer() as ReturnType<typeof createMockServer>;
+    const cache = createMockCache();
+
+    registerAllTools(server as never, cache);
+
+    const calls = (server.registerTool as ReturnType<typeof vi.fn>).mock
+      .calls as [string, { inputSchema: Record<string, unknown> }, unknown][];
+    const contextCall = calls.find(
+      ([name]) => name === "get_agent_context",
+    )!;
+    expect(Object.keys(contextCall[1].inputSchema)).toEqual(
+      expect.arrayContaining(["repo_root", "include", "exclude"]),
+    );
+    expect(contextCall[1].inputSchema).not.toHaveProperty("output_dir");
   });
 });

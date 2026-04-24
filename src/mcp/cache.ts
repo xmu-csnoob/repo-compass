@@ -31,6 +31,10 @@ export class PipelineCache {
     this.entries.set(key, entry);
   }
 
+  delete(key: string): void {
+    this.entries.delete(key);
+  }
+
   clear(): void {
     this.entries.clear();
   }

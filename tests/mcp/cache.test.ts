@@ -10,7 +10,7 @@ describe("PipelineCache", () => {
   const fakeEntry = Promise.resolve({
     input: {},
     scan: { paths: [] },
-    intentMap: { categories: [] },
+    intentMap: { entries: [] },
     signals: { edges: [] },
     comprehension: { key_paths: [] },
     contextIndex: { entrypoints: [] },
@@ -73,6 +73,17 @@ describe("PipelineCache", () => {
       cache.clear();
       expect(cache.get("a")).toBeUndefined();
       expect(cache.get("b")).toBeUndefined();
+    });
+  });
+
+  describe("delete", () => {
+    it("removes a single entry", () => {
+      cache = new PipelineCache();
+      cache.set("a", fakeEntry);
+      cache.set("b", fakeEntry);
+      cache.delete("a");
+      expect(cache.get("a")).toBeUndefined();
+      expect(cache.get("b")).toBe(fakeEntry);
     });
   });
 
