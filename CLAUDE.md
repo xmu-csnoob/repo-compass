@@ -20,6 +20,7 @@ repo-compass is a deterministic repo-analysis tool that generates navigation art
 | Run single test file | `npx vitest run <path>` |
 | Run tests matching pattern | `npx vitest run -t "<pattern>"` |
 | Run CLI | `node dist/cli/index.js <repo-path> [--debug] [--freshness-mode watch\|ci]` |
+| MCP Server | `node dist/cli/index.js --mcp` (stdio transport for Claude Code integration) |
 
 Requires Node.js >= 20. ESM only (`"type": "module"`).
 
@@ -42,7 +43,8 @@ The CLI (`src/cli/index.ts`) orchestrates the full pipeline and writes artifacts
 - **`src/contracts/`** — All Zod schemas, TypeScript types, and validation logic. This is the source of truth for every data boundary in the pipeline. Schema version is `"2.0"`.
 - **`src/shared/`** — Low-level utilities: filesystem helpers (`fs.ts`), ignore-pattern loading (`ignore.ts`), path resolution (`paths.ts`). No business logic.
 - **`src/freshness/`** — Incremental-scan support. Computes path signatures (mtime + size), detects changes across runs. Modes: `off` (no state), `watch` (track changes), `ci` (verify freshness).
-- **`src/cli/index.ts`** — Entry point. Parses args, builds `RepoInput`, runs the pipeline, writes artifacts. Supports `--debug` to emit intermediate JSONs (scan.json, signals.json, comprehension.json).
+- **`src/cli/index.ts`** — Entry point. Parses args, builds `RepoInput`, runs the pipeline, writes artifacts. Supports `--debug` to emit intermediate JSONs (scan.json, signals.json, comprehension.json). Supports `--mcp` to start the MCP server.
+- **`src/mcp/`** — MCP Server layer. Provides 7 tools (`scan_repo`, `get_signals`, `get_context_index`, `get_entrypoints`, `get_import_graph`, `get_key_paths`, `get_file_summary`) over stdio transport. Uses `PipelineCache` for session-scoped caching. See `docs/mcp.md`.
 
 ## Key Data Contracts
 
@@ -70,9 +72,11 @@ src/
   render/       # artifact rendering (Stage E) — JSON + markdown + HTML
   freshness/    # incremental scan state
   shared/       # fs, ignore, path utilities
+  mcp/          # MCP Server layer (stdio transport, 7 tools, cache)
   cli/          # CLI entry point and orchestration
   index.ts      # public API exports
 tests/
+  mcp/          # MCP Server tests (cache, pipeline, tools)
   fixtures/     # 13+ sample repos for fixture-driven tests (see tests/fixtures/README.md)
   contracts/    # schema compatibility and validation tests
   scan/         # structure scan assertions against fixtures

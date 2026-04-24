@@ -7,3 +7,4 @@ export * from "./comprehend/index.js";
 export * from "./render/index.js";
 export * from "./cli/index.js";
 export * from "./shared/index.js";
+export * from "./mcp/index.js";

@@ -23,6 +23,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.24.3"
   },
   "devDependencies": {

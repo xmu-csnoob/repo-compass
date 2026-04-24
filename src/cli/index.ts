@@ -37,6 +37,7 @@ function printHelp(): void {
       "  --agent-start         Override to enable the startup markdown artifact.",
       "  --agent-views         Legacy alias for --agent-start.",
       "  --freshness-mode      Declare freshness mode metadata: off, watch, or ci.",
+      "  --mcp                 Start the MCP server for Claude Code integration.",
       "  --help                Show this message.",
       "",
     ].join("\n"),
@@ -245,6 +246,13 @@ export async function runPipeline(argv: readonly string[]): Promise<{
 }
 
 export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<void> {
+  // MCP server mode takes over the process entirely.
+  if (argv.includes("--mcp")) {
+    const { startMcpServer } = await import("../mcp/index.js");
+    await startMcpServer();
+    return;
+  }
+
   try {
     const result = await runPipeline(argv);
     process.stdout.write(`Generated run ${result.runId}\n`);

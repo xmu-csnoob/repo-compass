@@ -91,7 +91,7 @@ describe("intent-aware comprehension guidance", () => {
         (hint) =>
           hint.kind === "run" &&
           hint.text === "Use python -m fastapi to run the CLI." &&
-          hint.evidence.includes("fastapi/__main__.py"),
+          (hint.evidence?.includes("fastapi/__main__.py") ?? false),
       ),
     ).toBe(true);
 
